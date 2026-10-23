@@ -1,0 +1,16 @@
+{
+  "ignore": [
+    {
+      "rule": "ci-security-nonblocking",
+      "path": "",
+      "reason": "The security job has never run on the real GitLab; ADR 0009 keeps it non-blocking until its first green run, then it moves to allow_failure: { exit_codes: 2 } (see the template in referenced-automation-utils).",
+      "expires": "2027-03-31"
+    },
+    {
+      "rule": "ci-image-mismatch",
+      "path": ".gitlab-ci.yml",
+      "reason": "No test in this repo opens a browser: the SAS desktop programs are driven through a PowerShell bridge and the whole suite runs on a built-in stand-in desktop, so the browsers in the image (Playwright 1.47.0) are never used and nothing needs to install matching ones. If a test ever asks for Playwright's `page` fixture, add `npx playwright install chromium` to the test job and drop this exception.",
+      "expires": "2027-03-31"
+    }
+  ]
+}

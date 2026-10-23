@@ -1,0 +1,11 @@
+export * from './config';
+export * from './secrets';
+export * from './format';
+export * from './coalesce';
+export * from './recorder';
+export * from './names';
+export * from './locators';
+export * from './generator';
+export { keysToSendKeys, normalizeKeys, titleFromPattern, titlePatternOf, targetWindowOf, RAW_EVENT_TYPES, RECORD_MODES, DEFAULT_MAX_QUEUE } from '../desktop/recording';
+export type { ControlSpec, PathStep, RawEvent, RawOf, RecordMode, RecordSnapshot, RecordStartResult, Target, TargetWindow, UserAction, WindowSpec } from '../desktop/recording';
+export * from './egScript';

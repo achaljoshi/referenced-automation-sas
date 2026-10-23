@@ -1,0 +1,419 @@
+{
+  "version": 1,
+  "app": "eg",
+  "startedAt": "2026-10-23T09:00:00.000Z",
+  "tool": "sas-desktop-record 1 (stand-in desktop)",
+  "events": [
+    {
+      "type": "windowOpened",
+      "t": 0,
+      "title": "SAS Enterprise Guide",
+      "className": "HwndWrapper[SEGuide.exe;;fake]",
+      "process": "SEGuide"
+    },
+    {
+      "type": "dialogHandled",
+      "t": 0,
+      "title": "Tip of the Day",
+      "button": "Close"
+    },
+    {
+      "type": "click",
+      "target": {
+        "window": {
+          "titlePattern": "^SAS Enterprise Guide$",
+          "title": "SAS Enterprise Guide",
+          "className": "HwndWrapper[SEGuide.exe;;fake]"
+        },
+        "path": [
+          {
+            "controlType": "Button",
+            "name": "Connect",
+            "automationId": "ConnectButton"
+          }
+        ],
+        "unique": {
+          "automationId": true,
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "t": 360
+    },
+    {
+      "type": "windowOpened",
+      "t": 600,
+      "title": "Select Profile",
+      "className": "SunAwtDialog",
+      "process": "SEGuide"
+    },
+    {
+      "type": "select",
+      "t": 840,
+      "target": {
+        "window": {
+          "titlePattern": "^Select Profile$",
+          "title": "Select Profile",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "List",
+            "name": "Profiles"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "items": [
+        "Dev SAS Server"
+      ]
+    },
+    {
+      "type": "click",
+      "target": {
+        "window": {
+          "titlePattern": "^Select Profile$",
+          "title": "Select Profile",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Button",
+            "name": "OK"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "t": 960
+    },
+    {
+      "type": "windowClosed",
+      "t": 1200,
+      "title": "Select Profile",
+      "className": "SunAwtDialog",
+      "process": "SEGuide"
+    },
+    {
+      "type": "windowOpened",
+      "t": 1320,
+      "title": "SAS Logon",
+      "className": "SunAwtDialog",
+      "process": "SEGuide"
+    },
+    {
+      "type": "text",
+      "t": 2280,
+      "target": {
+        "window": {
+          "titlePattern": "^SAS Logon$",
+          "title": "SAS Logon",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Edit",
+            "name": "User ID:",
+            "automationId": "userIdField"
+          }
+        ],
+        "unique": {
+          "automationId": true,
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "committedBy": "blur",
+      "value": "sasdemo"
+    },
+    {
+      "type": "text",
+      "t": 2520,
+      "target": {
+        "window": {
+          "titlePattern": "^SAS Logon$",
+          "title": "SAS Logon",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Edit",
+            "name": "Password:",
+            "automationId": "passwordField"
+          }
+        ],
+        "unique": {
+          "automationId": true,
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "committedBy": "enter",
+      "secret": true,
+      "secretKind": "password"
+    },
+    {
+      "type": "click",
+      "target": {
+        "window": {
+          "titlePattern": "^SAS Logon$",
+          "title": "SAS Logon",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Button",
+            "name": "OK"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "t": 2760
+    },
+    {
+      "type": "windowClosed",
+      "t": 3000,
+      "title": "SAS Logon",
+      "className": "SunAwtDialog",
+      "process": "SEGuide"
+    },
+    {
+      "type": "key",
+      "t": 3120,
+      "keys": "Ctrl+O",
+      "window": {
+        "titlePattern": "^SAS Enterprise Guide$",
+        "title": "SAS Enterprise Guide",
+        "className": "HwndWrapper[SEGuide.exe;;fake]"
+      }
+    },
+    {
+      "type": "windowOpened",
+      "t": 3240,
+      "title": "Open",
+      "className": "#32770",
+      "process": "SEGuide"
+    },
+    {
+      "type": "text",
+      "t": 5880,
+      "target": {
+        "window": {
+          "titlePattern": "^Open$",
+          "title": "Open",
+          "className": "#32770"
+        },
+        "path": [
+          {
+            "controlType": "Edit",
+            "name": "File name:",
+            "automationId": "1148"
+          }
+        ],
+        "unique": {
+          "automationId": true,
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "committedBy": "blur",
+      "value": "C:\\Projects\\Sales.egp"
+    },
+    {
+      "type": "click",
+      "target": {
+        "window": {
+          "titlePattern": "^Open$",
+          "title": "Open",
+          "className": "#32770"
+        },
+        "path": [
+          {
+            "controlType": "Button",
+            "name": "Open",
+            "automationId": "1"
+          }
+        ],
+        "unique": {
+          "automationId": true,
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "t": 6000
+    },
+    {
+      "type": "windowClosed",
+      "t": 6240,
+      "title": "Open",
+      "className": "#32770",
+      "process": "SEGuide"
+    },
+    {
+      "type": "select",
+      "t": 6480,
+      "target": {
+        "window": {
+          "titlePattern": "^Sales - SAS Enterprise Guide$",
+          "title": "Sales - SAS Enterprise Guide",
+          "className": "HwndWrapper[SEGuide.exe;;fake]"
+        },
+        "path": [
+          {
+            "controlType": "Pane",
+            "name": "Project",
+            "automationId": "projectArea"
+          },
+          {
+            "controlType": "Tab",
+            "name": "Process Flow"
+          },
+          {
+            "controlType": "List",
+            "name": "Main Flow"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "items": [
+        "Summary"
+      ]
+    },
+    {
+      "type": "click",
+      "target": {
+        "window": {
+          "titlePattern": "^Sales - SAS Enterprise Guide$",
+          "title": "Sales - SAS Enterprise Guide",
+          "className": "HwndWrapper[SEGuide.exe;;fake]"
+        },
+        "path": [
+          {
+            "controlType": "Pane",
+            "name": "Project",
+            "automationId": "projectArea"
+          },
+          {
+            "controlType": "Button",
+            "name": "Run",
+            "automationId": "RunButton"
+          }
+        ],
+        "unique": {
+          "automationId": true,
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "t": 6600
+    }
+  ],
+  "stats": {
+    "rawEvents": 59,
+    "dropped": 0,
+    "secretEntries": 1,
+    "secretKeysDiscarded": 8,
+    "durationMs": 6840
+  }
+}

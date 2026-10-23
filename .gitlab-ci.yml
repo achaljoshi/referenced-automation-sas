@@ -1,0 +1,263 @@
+# ============================================================================
+# GitLab CI pipeline for referenced-automation-sas.
+#
+# Triggers on: any push to main (including a merge request being merged),
+# every merge request, and manual "Run pipeline" from the GitLab UI - see
+# the `workflow:` block below.
+#
+# ---- Restricted-network setup: read this before your first run ----
+#
+# `mcr.microsoft.com` and the public npm registry are not reachable from
+# this network - every image and package this pipeline needs has to come
+# from your org's JFrog Artifactory instead. Two CI/CD variables make that
+# work (Settings > CI/CD > Variables in this project, or set at group
+# level so every repo in the family shares them):
+#
+#   NPM_REGISTRY_URL            Your Artifactory npm registry URL (the same
+#                                one already configured in your local
+#                                ~/.npmrc / npm config - this pipeline never
+#                                hardcodes it, just reads it from the
+#                                variable). If unset, `npm ci` falls back to
+#                                npm's normal default registry, which will
+#                                fail here - so this one is effectively
+#                                required.
+#   PLAYWRIGHT_DOWNLOAD_HOST     Optional. Only set this if your Artifactory
+#                                also mirrors Playwright's browser-binary
+#                                CDN (a "generic remote repository" pointed
+#                                at playwright.azureedge.net, in Artifactory
+#                                terms). Leave unset to let Playwright try
+#                                its real CDN directly - some networks allow
+#                                that one host through even when general
+#                                internet access is blocked.
+#
+# `image:` below is the Playwright Docker image mirrored into this org's
+# JFrog Artifactory - confirmed reachable, unlike mcr.microsoft.com. It's
+# used only as a Node.js + Ubuntu Jammy base with the OS-level libraries
+# browsers need already installed - NOT as the source of the browsers
+# themselves. The version baked into that image (v1.47.0) does not have to
+# match this repo's own @playwright/test version (kept at whatever
+# package.json already pins, unchanged for CI's sake) - the `test` job
+# below runs `npx playwright install chromium` itself, after `npm ci`, to
+# fetch a browser binary that actually matches whatever version npm just
+# installed. Running a Playwright driver against a browser built for a
+# different Playwright version is exactly the kind of mismatch that fails
+# in confusing, hard-to-debug ways - installing fresh every run avoids
+# ever needing to keep an image tag and a package.json version in sync by
+# hand. `--with-deps` is deliberately NOT used - that flag also apt-get
+# installs OS packages, which needs its own network path to a
+# Debian/Ubuntu mirror. The image already has everything the browser
+# needs at the OS level, so a plain `playwright install chromium`
+# (binary only) is enough and avoids that extra network dependency.
+#
+# If the `npx playwright install` step fails with a network error, that's
+# the concrete signal that this network has no reachable path to a
+# Playwright browser source at all - at that point either ask your
+# platform team for a PLAYWRIGHT_DOWNLOAD_HOST mirror, or for a Docker
+# image tag in Artifactory whose baked-in browser version actually matches
+# this repo's @playwright/test version.
+#
+# No browser is installed: no test of this repo opens one (the desktop programs are driven through a PowerShell bridge, and the
+# whole suite runs on Linux against a built-in stand-in desktop). If a test ever asks for Playwright's `page` fixture, add
+# `npx playwright install chromium` to the test job.
+#
+# ---- What runs where ----
+#
+# build   typecheck (tests, features and scripts too), lint, the bridge-hash check (the PowerShell bridge is verified against a
+#         pinned SHA-256: a changed script without a regenerated hash fails here)
+# test    the WHOLE suite on this Linux image against the built-in stand-in desktop (the tests start it themselves; a fake
+#         Management Console, a fake Enterprise Guide and a fake Enterprise Guide COM object model). It ends with the
+#         minimum-executed gate. NOT VERIFIED against the real programs: only a Windows runner can do that - see the two manual
+#         jobs `sas-desktop-conformance` and `sas-desktop-smoke` below.
+# security, audit, pages   as in the other repos of the family
+#
+# ---- Cross-repo dependencies: installed by version ----
+#
+# The @automation/* packages this repo uses are listed with their versions in package.json and installed by
+# `npm ci` from the registry in NPM_REGISTRY_URL, like any other package - nothing is cloned or packed here.
+# So every package this repo depends on must be PUBLISHED there at the version package.json asks for
+# (README: Publishing a package). To take a newer version, change it in package.json, run `npm install` and
+# commit package.json and package-lock.json.
+# ============================================================================
+
+image: csg-cst-docker-local.artifactory.alm.corp.hmrc.gov.uk:443/common/microsoft/playwright:v1.47.0-jammy
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+stages:
+  - build
+  - test
+  - report
+
+variables:
+  npm_config_cache: "${CI_PROJECT_DIR}/.npm-cache"
+
+cache:
+  key: "${CI_COMMIT_REF_SLUG}-npm"
+  paths:
+    - .npm-cache/
+
+before_script:
+  - if [ -n "${NPM_REGISTRY_URL:-}" ]; then npm config set registry "$NPM_REGISTRY_URL"; fi
+  - if [ -n "${PLAYWRIGHT_DOWNLOAD_HOST:-}" ]; then export PLAYWRIGHT_DOWNLOAD_HOST; fi
+
+build:
+  stage: build
+  script:
+    - npm ci
+    - npm run build
+    - npm run lint
+    # type-checks tests, features' steps and scripts too (the build only compiles src/)
+    - npm run typecheck
+    # the PowerShell bridge must be the script whose SHA-256 is pinned in src/desktop/bridgeHash.generated.ts
+    - npm run bridge:hash:check
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 hour
+
+test:
+  stage: test
+  needs: ["build"]
+  script:
+    - npm ci
+    # The checks meant for a REAL machine (tests/real) run here against the stand-in desktop, so they cannot rot unnoticed. Without
+    # SAS_DESKTOP_SIMULATOR they are skipped on this image. They run BEFORE the main run because every Playwright run empties
+    # test-results: the artifacts below must come from the main run.
+    - SAS_DESKTOP_SIMULATOR=true npm run test:conformance
+    - SAS_DESKTOP_SIMULATOR=true npm run test:real-smoke
+    # `bddgen` first (the Gherkin features only exist as tests after it), then every test on the stand-in desktop (the examples, the
+    # sample features, the fixtures, the policy), then scripts/min-executed.js: the job FAILS when fewer tests executed than expected
+    # and prints how many were skipped and why (a run that discovers tests but skips them all is not evidence of anything).
+    - npm run test:ci
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - playwright-report/
+      - allure-results/
+      - logs/
+    reports:
+      junit: test-results/junit.xml
+    expire_in: 30 days
+
+# ---- Real SAS programs (manual, Windows runner only) ----
+#
+# The SAS desktop programs run on Windows and are driven through a PowerShell bridge (UI Automation and COM): nothing else in this
+# pipeline can run against them. These two jobs are TEMPLATES, manual, and may fail without blocking.
+#
+# NOT VERIFIED: this repo's author has no access to such a runner. Before relying on them: (1) replace the placeholder tag with your
+# Windows runner's tag - a runner that is a logged-in, UNLOCKED, interactive desktop session (a service or a locked screen makes UI
+# steps fail with SESSION_LOST) with SAS Management Console and/or SAS Enterprise Guide installed and the Java Access Bridge enabled;
+# (2) check the commands match that runner's shell (PowerShell on a default Windows runner); (3) declare the environment in
+# env/sas-environments.json and set SAS_USER / SAS_PASSWORD (masked), SAS_SMC_PROFILE, SAS_EG_PROFILE, SAS_SMC_PATH, SAS_EG_PATH
+# (and ENV) as CI variables; (4) make sure the runner can reach NPM_REGISTRY_URL (every @automation package is installed from there
+# by version). `before_script` is cleared (it is Linux/sh) and the Docker `image` above is ignored by a Windows *shell* executor.
+# One runner = one desktop = one worker: never run these jobs in parallel on the same runner.
+
+# `npm run doctor` and the checks that need NO login and change NOTHING: does the bridge start, is the desktop interactive and
+# unlocked, does UI Automation work, can the Enterprise Guide COM class be created. Run it first on a new runner.
+sas-desktop-conformance:
+  stage: test
+  needs: ["build"]
+  when: manual
+  allow_failure: true
+  tags:
+    - sas-desktop-windows   # PLACEHOLDER - rename to your Windows runner's tag
+  before_script: []
+  script:
+    - if ($env:NPM_REGISTRY_URL) { npm config set registry $env:NPM_REGISTRY_URL }
+    - npm ci
+    - npm run build
+    - npm run doctor
+    - npm run test:conformance
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - logs/
+    expire_in: 30 days
+
+# The read-only smoke tests of the real programs (tests/real/smoke.spec.ts): log on, look, leave. They need the logins as masked
+# CI variables. A rejected logon is typed once and then refused by the logon guard (the marker is .sas-state/logon-failed.json:
+# cache that folder between pipelines if re-runs should be stopped too), so a wrong password cannot lock the account by retrying.
+sas-desktop-smoke:
+  stage: test
+  needs: ["build"]
+  when: manual
+  allow_failure: true
+  tags:
+    - sas-desktop-windows   # PLACEHOLDER - rename to your Windows runner's tag
+  before_script: []
+  script:
+    - if ($env:NPM_REGISTRY_URL) { npm config set registry $env:NPM_REGISTRY_URL }
+    - npm ci
+    - npm run build
+    - npm run doctor
+    - npm run test:real-smoke
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - logs/
+    expire_in: 30 days
+
+# ---- Security gates: dependency audit + secret scan ----
+#
+# automation-audit-gate fails on high/critical advisories unless audit-allowlist.json accepts them - each exception
+# has an owner, a reason and an EXPIRY DATE, so an accepted risk is re-decided on purpose. automation-scan-secrets
+# fails if a secret is about to be committed (and never prints it). Both ship in @automation/referenced-automation-utils.
+# allow_failure is true until this job has run green on your GitLab (the audit needs NPM_REGISTRY_URL to be reachable
+# and to support `npm audit`) - then set it to false.
+security:
+  stage: test
+  needs: ["build"]
+  allow_failure: true
+  script:
+    - npm ci
+    - npx automation-scan-secrets
+    - npx automation-audit-gate --allow-unassigned
+
+# ---- Fortnightly framework audit (start it by hand: "Run pipeline" is not needed, use this job's play button) ----
+#
+# The automated part of the audit (docs/governance/AUDIT.md in referenced-automation-utils): waits, skips, assertions,
+# traceability, dependencies, governance files, pipeline and documentation consistency. The report is the job's artifact.
+# Set AUDIT_RUN_GATES=1 on the pipeline to also run lint, typecheck, test and security inside this job (slow).
+audit:
+  stage: report
+  needs: ["build"]
+  when: manual
+  allow_failure: true
+  script:
+    - npm ci
+    - npx automation-framework-audit --out audit-reports ${AUDIT_RUN_GATES:+--run}
+  artifacts:
+    when: always
+    paths:
+      - audit-reports/
+    expire_in: 90 days
+
+# The Allure HTML report: `allure generate` is a Java program, so it needs a JRE on the runner image (the Playwright
+# image has none by default). Without one, or with no raw results to turn into a report, this job says so and ends
+# without a `public` folder - nothing is published, and the raw allure-results stay in the test job's artifacts.
+pages:
+  stage: report
+  needs: ["test"]
+  script:
+    - |
+      if [ ! -d allure-results ] || [ -z "$(ls -A allure-results 2>/dev/null)" ]; then
+        echo "No allure-results from the test job - nothing to publish."
+        exit 0
+      fi
+    - java -version || { echo "The Allure CLI needs Java, which this image does not have - see the comment above the pages job." >&2; exit 1; }
+    - npm ci
+    - npx allure generate allure-results --clean -o public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

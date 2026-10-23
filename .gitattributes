@@ -1,0 +1,6 @@
+# Scripts must keep the line endings their interpreter expects, regardless
+# of the platform they're edited on or git's core.autocrlf setting - a
+# batch file with LF-only line endings is unreliable for multi-line
+# if/else ( ... ) blocks on cmd.exe.
+*.sh text eol=lf
+*.bat text eol=crlf

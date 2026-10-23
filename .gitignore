@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tgz
+
+# Test output
+test-results/
+playwright-report/
+blob-report/
+allure-results/
+allure-report/
+.last-run.json
+logs/
+*.log
+
+# Local env overrides - never commit real secrets. .env.<env> template files
+# (.env.qa, .env.stage, .env.dev) ARE committed; only the local override is not.
+.env
+.env.local
+.env.*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+
+# IntelliJ - keep shared project config, ignore machine-specific state
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+.idea/httpRequests/
+.idea/dataSources/
+.idea/dataSources.local.xml
+*.iml
+out/
+
+# VS Code - keep shared settings/extensions, ignore machine-specific state
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# Eclipse / other IDEs
+.project
+.classpath
+.settings/
+
+# local secrets - never committed
+.secrets/
+
+# Tests generated from Gherkin features by bddgen
+.features-gen/
+
+# fortnightly audit output (keep it between audits; see referenced-automation-utils docs/governance/AUDIT.md)
+audit-reports/
+
+# the logon-failure marker (SAS_LOGON_FAILURE_COOLDOWN_MIN) - holds user and a fingerprint of a rejected password, never committed
+.sas-state/
+
+# mailbox folder of the remote desktop host client (REMOTE_SHARE_DIR default)
+.remote-mailbox/

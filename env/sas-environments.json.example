@@ -1,0 +1,24 @@
+{
+  "environments": {
+    "dev": {
+      "kind": "nonprod",
+      "hosts": ["sasmeta.dev.example.com", "**.dev.example.com:8561"],
+      "description": "Development. Metadata server sasmeta.dev.example.com (port 8561), application servers below dev.example.com. Replace the host patterns with the ones your SAS administrator gives you."
+    },
+    "qa": {
+      "kind": "nonprod",
+      "hosts": ["sasmeta.qa.example.com", "**.qa.example.com:8561"],
+      "description": "Quality assurance."
+    },
+    "stage": {
+      "kind": "nonprod",
+      "hosts": ["sasmeta.stage.example.com"],
+      "description": "Staging. Declared nonprod only when SAS administrators agree tests may change objects in it."
+    },
+    "prod": {
+      "kind": "prod",
+      "hosts": ["sasmeta.example.com"],
+      "description": "Production: read-only by construction. Reads also need SAS_ALLOW_PROD_READS=true. Nothing allows a change here."
+    }
+  }
+}

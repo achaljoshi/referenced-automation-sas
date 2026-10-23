@@ -1,0 +1,428 @@
+{
+  "version": 1,
+  "app": "smc",
+  "startedAt": "2026-10-23T09:00:00.000Z",
+  "tool": "sas-desktop-record 1 (stand-in desktop)",
+  "events": [
+    {
+      "type": "windowOpened",
+      "t": 0,
+      "title": "Connection Profile",
+      "className": "SunAwtDialog",
+      "process": "sasmc"
+    },
+    {
+      "type": "select",
+      "t": 120,
+      "target": {
+        "window": {
+          "titlePattern": "^Connection Profile$",
+          "title": "Connection Profile",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "List",
+            "name": "Profiles"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "items": [
+        "Dev Metadata Server"
+      ]
+    },
+    {
+      "type": "click",
+      "target": {
+        "window": {
+          "titlePattern": "^Connection Profile$",
+          "title": "Connection Profile",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Button",
+            "name": "OK"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "t": 240
+    },
+    {
+      "type": "windowClosed",
+      "t": 480,
+      "title": "Connection Profile",
+      "className": "SunAwtDialog",
+      "process": "sasmc"
+    },
+    {
+      "type": "windowOpened",
+      "t": 600,
+      "title": "Log On",
+      "className": "SunAwtDialog",
+      "process": "sasmc"
+    },
+    {
+      "type": "text",
+      "t": 1560,
+      "target": {
+        "window": {
+          "titlePattern": "^Log On$",
+          "title": "Log On",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Edit",
+            "name": "User ID:",
+            "automationId": "userIdField"
+          }
+        ],
+        "unique": {
+          "automationId": true,
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "committedBy": "blur",
+      "value": "sasdemo"
+    },
+    {
+      "type": "text",
+      "t": 1800,
+      "target": {
+        "window": {
+          "titlePattern": "^Log On$",
+          "title": "Log On",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Edit",
+            "name": "Password:",
+            "automationId": "passwordField"
+          }
+        ],
+        "unique": {
+          "automationId": true,
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "committedBy": "enter",
+      "secret": true,
+      "secretKind": "password"
+    },
+    {
+      "type": "click",
+      "target": {
+        "window": {
+          "titlePattern": "^Log On$",
+          "title": "Log On",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Button",
+            "name": "OK"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "t": 2040
+    },
+    {
+      "type": "windowClosed",
+      "t": 2280,
+      "title": "Log On",
+      "className": "SunAwtDialog",
+      "process": "sasmc"
+    },
+    {
+      "type": "windowOpened",
+      "t": 2400,
+      "title": "SAS Management Console",
+      "className": "SunAwtFrame",
+      "process": "sasmc"
+    },
+    {
+      "type": "expand",
+      "t": 2520,
+      "target": {
+        "window": {
+          "titlePattern": "^SAS Management Console$",
+          "title": "SAS Management Console",
+          "className": "SunAwtFrame"
+        },
+        "path": [
+          {
+            "controlType": "Tree",
+            "name": "Navigation Tree",
+            "automationId": "navTree"
+          },
+          {
+            "controlType": "TreeItem",
+            "name": "SAS Management Console"
+          },
+          {
+            "controlType": "TreeItem",
+            "name": "Environment Management"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      }
+    },
+    {
+      "type": "select",
+      "t": 2880,
+      "target": {
+        "window": {
+          "titlePattern": "^SAS Management Console$",
+          "title": "SAS Management Console",
+          "className": "SunAwtFrame"
+        },
+        "path": [
+          {
+            "controlType": "Tree",
+            "name": "Navigation Tree",
+            "automationId": "navTree"
+          }
+        ],
+        "unique": {
+          "automationId": true,
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "items": [
+        "User Manager"
+      ]
+    },
+    {
+      "type": "click",
+      "target": {
+        "window": {
+          "titlePattern": "^SAS Management Console$",
+          "title": "SAS Management Console",
+          "className": "SunAwtFrame"
+        },
+        "path": [
+          {
+            "controlType": "Button",
+            "name": "New User...",
+            "className": "JButton"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "t": 3000
+    },
+    {
+      "type": "windowOpened",
+      "t": 3240,
+      "title": "New User Properties",
+      "className": "SunAwtDialog",
+      "process": "sasmc"
+    },
+    {
+      "type": "text",
+      "t": 5040,
+      "target": {
+        "window": {
+          "titlePattern": "^New User Properties$",
+          "title": "New User Properties",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Edit",
+            "name": "Name:",
+            "className": "JTextField"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "committedBy": "blur",
+      "value": "AUTO_demo_user"
+    },
+    {
+      "type": "text",
+      "t": 6840,
+      "target": {
+        "window": {
+          "titlePattern": "^New User Properties$",
+          "title": "New User Properties",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Edit",
+            "name": "Display Name:",
+            "className": "JTextField"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "committedBy": "blur",
+      "value": "AUTO demo user"
+    },
+    {
+      "type": "click",
+      "target": {
+        "window": {
+          "titlePattern": "^New User Properties$",
+          "title": "New User Properties",
+          "className": "SunAwtDialog"
+        },
+        "path": [
+          {
+            "controlType": "Button",
+            "name": "OK",
+            "className": "JButton"
+          }
+        ],
+        "unique": {
+          "nameAndType": true
+        },
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 24
+        },
+        "fallbackPoint": {
+          "x": 50,
+          "y": 12
+        }
+      },
+      "t": 6960
+    },
+    {
+      "type": "windowClosed",
+      "t": 7200,
+      "title": "New User Properties",
+      "className": "SunAwtDialog",
+      "process": "sasmc"
+    }
+  ],
+  "stats": {
+    "rawEvents": 62,
+    "dropped": 0,
+    "secretEntries": 1,
+    "secretKeysDiscarded": 8,
+    "durationMs": 7320
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "environments": {
+    "simulator": { "kind": "nonprod", "hosts": ["localhost"], "description": "the stand-in desktop" },
+    "prod-sim": { "kind": "prod", "hosts": ["localhost"], "description": "a production environment, for the tests that prove production stays read-only" }
+  }
+}

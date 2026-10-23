@@ -1,0 +1,11 @@
+{
+  "allow": [
+    {
+      "id": "GHSA-qxc2-j82w-r537",
+      "package": "@faker-js/faker",
+      "reason": "Inherited from @automation/referenced-automation-utils (see its audit-allowlist.json): fixed in faker 10.5+, which is ESM-only, while this family compiles to CommonJS on Node >=18. Nothing here calls faker.helpers.fake(); do not pass untrusted input to it.",
+      "owner": "UNASSIGNED - name a person or team",
+      "expires": "2027-03-31"
+    }
+  ]
+}

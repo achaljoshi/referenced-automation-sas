@@ -1,0 +1,9 @@
+{
+  "environments": {
+    "simulator": {
+      "kind": "nonprod",
+      "hosts": ["localhost"],
+      "description": "The built-in stand-in desktop (SAS_DESKTOP_SIMULATOR=true). It contacts no SAS system. Add your own environments next to it: see env/sas-environments.json.example."
+    }
+  }
+}
