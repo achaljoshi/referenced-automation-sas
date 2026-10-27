@@ -1,4 +1,5 @@
 import type { ConfigReader } from '@automation/referenced-automation-utils';
+import { reachesRealDesktop } from '../desktop/platform';
 
 /**
  * One desktop = one worker. The SAS programs are driven through ONE interactive Windows desktop (or one remote desktop host whose
@@ -22,7 +23,7 @@ export interface WorkerPlan {
  */
 export function realDesktopReachable(env: ConfigReader, platform: NodeJS.Platform = process.platform): boolean {
   if (env.getBoolean('SAS_DESKTOP_SIMULATOR', false)) return false;
-  return platform === 'win32' || env.get('SAS_DESKTOP_TRANSPORT', 'powershell').trim().toLowerCase() === 'remote';
+  return reachesRealDesktop({ platform, transport: env.get('SAS_DESKTOP_TRANSPORT', 'powershell') });
 }
 
 export function desktopWorkerPlan(env: ConfigReader, platform: NodeJS.Platform = process.platform): WorkerPlan {

@@ -137,6 +137,10 @@ test.describe('ProcessTransport speaks the bridge protocol', () => {
 });
 
 test.describe('PowerShellTransport launches the verified script with the right PowerShell arguments', () => {
+  // the stand-in for powershell.exe below is a script with a shebang, which Windows cannot start; the arguments it checks are the same
+  // on every system, and the real PowerShell is what `npm run test:conformance` checks on Windows
+  test.skip(process.platform === 'win32', 'the fake powershell.exe is a shebang script, which Windows cannot start (the real one is checked by test:conformance)');
+
   /** A stand-in for powershell.exe: records how it was called, then plays the stand-in bridge. */
   function fakePowerShell(): { exe: string; record: string } {
     const dir = tempDir('fake-ps-');

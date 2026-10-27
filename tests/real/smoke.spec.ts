@@ -1,4 +1,6 @@
 import { desktopExpect as expect, desktopTest as test } from '../../src';
+import { desktopConfig } from '../../src/desktop';
+import { realTestsSkipReason } from '../support/realOptIn';
 
 /**
  * SMOKE tests of the REAL programs: log on, look, leave. They only READ (no project is run, nothing is created), so they are allowed in
@@ -12,6 +14,9 @@ import { desktopExpect as expect, desktopTest as test } from '../../src';
  * NOT VERIFIED on a real desktop. `SAS_DESKTOP_SIMULATOR=true npm run test:real-smoke` runs the same tests against the stand-in desktop so the
  * tests themselves cannot rot unnoticed; where no desktop can be reached they are SKIPPED with the reason.
  */
+const skipReason = realTestsSkipReason({ realTests: process.env.SAS_REAL_TESTS, simulated: desktopConfig().simulator });
+test.skip(skipReason !== undefined, skipReason ?? '');
+
 test.describe('real-program smoke @sas-desktop @real-smoke', () => {
   test('Management Console: log on, see the navigation tree, open the User Manager @real-smoke @smc-ui', async ({ smc, smcLoggedOn }) => {
     void smcLoggedOn; // asking for it logs the console on, through the logon guard

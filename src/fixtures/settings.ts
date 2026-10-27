@@ -1,6 +1,6 @@
 import { ConfigReader, loadEnv } from '@automation/referenced-automation-utils';
 import { ConfigurationError, RunContext, getRunContext, selectedEnvironmentName } from '../core';
-import { desktopConfig, type DesktopConfig } from '../desktop';
+import { desktopConfig, reachesDesktop, type DesktopConfig } from '../desktop';
 
 /**
  * Everything the fixtures decide from the configuration, resolved ONCE per worker so a mistake (a misspelt value, a half-set login)
@@ -114,7 +114,7 @@ export function resolveSettings(options: SettingsOptions = {}): FixtureSettings 
 
 /** Can this machine run desktop tests at all? Windows, the stand-in, or a remote desktop host. Anywhere else a test is skipped with the reason. */
 export function canRunDesktop(settings: Pick<FixtureSettings, 'simulated' | 'desktop'>, platform: NodeJS.Platform = process.platform): { ok: true } | { ok: false; reason: string } {
-  if (platform === 'win32' || settings.simulated || settings.desktop.transport === 'remote') return { ok: true };
+  if (reachesDesktop({ platform, transport: settings.desktop.transport, simulated: settings.simulated })) return { ok: true };
   return {
     ok: false,
     reason:

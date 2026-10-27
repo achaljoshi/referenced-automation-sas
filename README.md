@@ -211,6 +211,8 @@ Settings are looked up in this order (the first one found wins): a real environm
 | `SAS_SECRET` | What a converted test reads instead of a recorded secret. | (none) | For such recordings | **yes** |
 | `SAS_API_KEY` | What a converted test reads instead of a recorded API key. | (none) | For such recordings | **yes** |
 | `SAS_DESKTOP_SIMULATOR` | Use the built-in stand-in desktop (any OS). | false | No | no |
+| `SAS_REAL_TESTS` | Run the tests of the real SAS programs (`tests/real`); set by `npm run test:conformance` / `test:real-smoke`, not by hand. Without it a plain `npm test` never opens the real programs. | false | No | no |
+| `SAS_TEST_NODE_LAUNCH` | Tests of this repo only: start the fake command-line tool through `node` (what Windows needs; `1` takes that route on any system). | (unset) | No | no |
 | `MIN_EXECUTED` | The least number of tests that must have run (`scripts/min-executed.js`). | 1 | No | no |
 | `NPM_REGISTRY_URL` | The npm registry the setup scripts use. | (npm's own) | No | no |
 | `USE_LOCAL_PACKAGES` | Install the sibling packages locally instead of from the registry. | (unset) | No | no |
@@ -330,12 +332,12 @@ Windows, macOS and Linux. Everything runs on all three except the real SAS progr
 
 | Command | What it runs |
 |---|---|
-| `npm test` | Everything on the stand-in (`bddgen`, then Playwright). Tests that need a real desktop are skipped with the reason |
+| `npm test` | Everything on the stand-in (`bddgen`, then Playwright). The tests of the real programs (`tests/real`) are skipped with the reason on every system, Windows included: they run only when asked for (below) |
 | `npm run test:bdd` | The Gherkin features only (parallel workers; ends with the minimum-executed gate) |
 | `npm run test:smoke` / `npm run test:regression` | The `@smoke` / `@regression` tagged tests |
 | `npm run test:ci` | What the pipeline runs: everything, then `scripts/min-executed.js`: the run **fails when fewer tests executed than expected** and prints how many were skipped and why |
-| `npm run test:conformance` | **Real machine:** the checks that need no login (`tests/real/conformance.spec.ts`) |
-| `npm run test:real-smoke` | **Real machine:** log on, look, leave (`tests/real/smoke.spec.ts`; read-only) |
+| `npm run test:conformance` | **Real machine, on purpose:** the checks that need no login (`tests/real/conformance.spec.ts`); sets `SAS_REAL_TESTS=true` |
+| `npm run test:real-smoke` | **Real machine, on purpose:** log on, look, leave (`tests/real/smoke.spec.ts`; read-only); sets `SAS_REAL_TESTS=true` |
 | `npm run try:simulator` | The worked examples on the stand-in |
 | `npm run doctor`, `npm run inspect -- --app smc`, `npm run inspect:windows`, `npm run bridge:path` | Check the machine; print what a program looks like to the automation; list the open windows; print where the bridge script is and the SHA-256 it must have |
 | `npm run lint`, `npm run typecheck`, `npm run security` | The gates |

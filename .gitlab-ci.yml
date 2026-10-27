@@ -209,8 +209,9 @@ sas-desktop-smoke:
 # ---- The same suite on Windows and macOS (manual templates) ----
 #
 # The `test` job above runs the whole suite on Linux. These two run it on the other systems the package supports (docs/PLATFORMS.md), so a
-# change that works on Linux but not on Windows is seen. NOT VERIFIED: replace the placeholder tags with your runners' tags first. On
-# Windows the tests that need the real desktop are skipped with the reason unless the runner is the interactive SAS desktop.
+# change that works on Linux but not on Windows is seen. NOT VERIFIED: replace the placeholder tags with your runners' tags first. They
+# run against the stand-in desktop: the tests of the real programs (tests/real) are opt-in, so these jobs never open SAS or type a login,
+# even on a runner that has it installed (that is what the two manual jobs above are for).
 test-windows:
   stage: test
   needs: ["build"]

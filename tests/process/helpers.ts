@@ -15,7 +15,7 @@ export const FAKE_TOOL_SOURCE = path.join(__dirname, 'support', 'fake-batch-tool
 export const LAUNCH_BY_NODE = process.platform === 'win32' || process.env.SAS_TEST_NODE_LAUNCH === '1';
 
 /** The reason shown for a test that needs the fake tool started by its bare name, which Windows cannot do. */
-export const BARE_NAME_NEEDS_UNIX = 'a script cannot be started by its bare name on Windows (only .exe files run); resolution with .exe is covered by the fake-platform test';
+export const BARE_NAME_NEEDS_UNIX = 'needs the fake tool started by its own name: a script cannot be on Windows (only .exe files run), and SAS_TEST_NODE_LAUNCH=1 starts it through node instead; resolution with .exe is covered by the fake-platform test';
 
 /** A tool folder holding the fake batch tool under the name `fakebatch` (a script with an absolute-path shebang, executable). */
 export function toolDir(): string {

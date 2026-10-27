@@ -29,11 +29,26 @@ export interface PlatformReport {
 
 const NAMES: Partial<Record<NodeJS.Platform, string>> = { win32: 'Windows', darwin: 'macOS', linux: 'Linux' };
 
+const isRemote = (transport: string | undefined): boolean => (transport ?? 'powershell').trim().toLowerCase() === 'remote';
+
+/**
+ * Can a REAL Windows desktop be reached from here? Only on Windows itself, or through the remote desktop host. The one rule behind the
+ * skip of desktop tests, the single-worker plan and the `doctor` report: none of them may decide this on its own.
+ */
+export function reachesRealDesktop(facts: Pick<PlatformFacts, 'platform' | 'transport'> = {}): boolean {
+  return (facts.platform ?? process.platform) === 'win32' || isRemote(facts.transport);
+}
+
+/** A desktop of any kind: the real one, or the built-in stand-in (any OS). */
+export function reachesDesktop(facts: PlatformFacts = {}): boolean {
+  return facts.simulated === true || reachesRealDesktop(facts);
+}
+
 export function describePlatform(facts: PlatformFacts = {}): PlatformReport {
   const platform = facts.platform ?? process.platform;
   const windows = platform === 'win32';
-  const transport = (facts.transport ?? 'powershell').trim().toLowerCase();
-  const reachable = windows || facts.simulated === true || transport === 'remote';
+  const remote = isRemote(facts.transport);
+  const reachable = reachesDesktop(facts);
   const tools = windows
     ? 'SAS command-line tools run as .exe files found in SAS_TOOL_DIRS (a .bat or .cmd file is refused: it needs a shell).'
     : 'SAS command-line tools run as executable programs or scripts found in SAS_TOOL_DIRS.';
@@ -48,7 +63,7 @@ export function describePlatform(facts: PlatformFacts = {}): PlatformReport {
       title: 'real Management Console and Enterprise Guide (UI Automation, COM)',
       available: reachable,
       detail: windows
-        ? transport === 'remote'
+        ? remote
           ? 'Windows, through the remote desktop host (SAS_DESKTOP_TRANSPORT=remote).'
           : 'Windows: the PowerShell bridge runs here. It needs an unlocked interactive session.'
         : reachable

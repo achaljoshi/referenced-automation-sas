@@ -84,12 +84,14 @@ test.describe('where the program comes from', () => {
   });
 
   test('an absolute path outside the folders is allowed by default (explicit path) and refused when explicit paths are off', async () => {
-    test.skip(LAUNCH_BY_NODE, BARE_NAME_NEEDS_UNIX);
     expect((await driver().run(fake('out=ok'))).exitCode).toBe(0);
     const error = (await driver({ allowExplicitPaths: false, toolDirs: [tempDir()] }).run(fake('out=ok')).catch((e: unknown) => e)) as ProcessError;
     expect(error.code).toBe('tool-not-allowed');
     expect(error.message).toContain('explicit paths are switched off');
-    // inside a tool folder it is fine even then
+  });
+
+  test('with explicit paths off, a program inside a tool folder is still allowed', async () => {
+    test.skip(LAUNCH_BY_NODE, BARE_NAME_NEEDS_UNIX);
     const dir = toolDir();
     expect((await driver({ allowExplicitPaths: false, toolDirs: [dir] }).run({ command: path.join(dir, 'fakebatch'), kind: 'read', host: 'sasmeta.dev.example.com' })).exitCode).toBe(0);
   });

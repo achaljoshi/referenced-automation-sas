@@ -4,7 +4,7 @@ The package runs on **Windows, macOS and Linux**. One part of it - the real SAS 
 Management Console and Enterprise Guide are driven through Windows UI Automation and Windows COM objects. Everywhere else the tests
 that need them are **skipped with the reason** (and counted by the minimum-executed gate), or reach a Windows machine remotely.
 
-`npm run doctor` prints this table for the machine it runs on.
+`npm run doctor` prints this table for the machine it runs on. On a system that cannot reach a Windows desktop it says so and exits 0: the command-line half works there, and only `doctor` on the Windows machine can check the desktop half.
 
 | What | Windows | macOS / Linux | Notes |
 |---|---|---|---|
@@ -13,7 +13,7 @@ that need them are **skipped with the reason** (and counted by the minimum-execu
 | Recorder converter, Enterprise Guide script importer | yes | yes | They read files and write TypeScript |
 | The built-in stand-in desktop (`SAS_DESKTOP_SIMULATOR=true`) | yes | yes | Runs the whole suite with no SAS installed |
 | Real Management Console and Enterprise Guide (UI Automation, COM) | yes | **no** | Unless `SAS_DESKTOP_TRANSPORT=remote` points at a Windows host |
-| The recorder (capturing what a person does) | yes | **no** | Same reason: it records through UI Automation |
+| The recorder (capturing what a person does) | yes | **no** | It records through UI Automation. Against the stand-in it works on any system |
 
 ## Command-line tools
 
@@ -32,7 +32,19 @@ Set `SAS_DESKTOP_TRANSPORT=remote` and the remote desktop settings in section 7 
 |---|---|
 | macOS | The whole suite runs here (the development machine). |
 | Linux | The pipeline's `test` job runs the whole suite on a Linux image. |
-| Windows | **NOT VERIFIED.** The code is written for it (the process driver, the bridge, `path.win32` handling, LF line endings for every text file in `.gitattributes`, POSIX-only tests skipped with a reason) and the Windows branches are tested with a fake platform, but the suite has not been run on Windows by the author. Run `npm run test:ci` on a Windows machine, or the manual `test-windows` job, and send the failures. |
+| Windows | **NOT VERIFIED.** The code is written for it (the process driver, the bridge, `path.win32` handling, LF line endings for every text file in `.gitattributes`, POSIX-only tests skipped with a reason) and the Windows branches are tested with a fake platform, but the suite has not been run on Windows by the author. Run `npm run test:ci` on a Windows machine, or the manual `test-windows` job, and send the failures. It is safe on a machine that has SAS: see the next section. |
+
+## Running the suite on a Windows machine that has SAS
+
+`npm test` and `npm run test:ci` run the suite against the **stand-in desktop**; they do not open Management Console or Enterprise Guide and do not type a login. The tests under `tests/real` - the only ones that would - are skipped with the reason unless you ask for them on purpose:
+
+| To | Run |
+|---|---|
+| Check the machine (changes nothing) | `npm run doctor` |
+| The real-program checks that need no login | `npm run test:conformance` |
+| Log on, look, leave (read-only; uses your login, once - a rejected logon is never retried) | `npm run test:real-smoke` |
+
+Both set `SAS_REAL_TESTS=true` for their own run through `scripts/run-real.js`, which works the same in PowerShell, cmd and sh. A new spec file under `tests/real` must ask for that opt-in or `tests/optInForRealTests.spec.ts` fails.
 
 How the Windows-only differences are tested without Windows:
 
@@ -46,3 +58,6 @@ How the Windows-only differences are tested without Windows:
 3. Join paths with `path`; paths on the SAS machine are `path.win32`.
 4. A test that needs a POSIX feature (a signal, a mode bit, a symbolic link) says so with `test.skip(process.platform === 'win32', '<reason>')`.
 5. Text files are LF in the repository (`.gitattributes`); only `.bat` files are CRLF.
+6. One rule decides whether a desktop can be reached (`reachesRealDesktop` / `reachesDesktop` in `src/desktop/platform.ts`); the test gate, the worker plan and `doctor` all call it. Do not write the check again.
+
+Rules 1 and 2 are enforced by `tests/portability.spec.ts` (it scans `src/`; an exception goes in its `ALLOWED` table with a reason). The other rules are for review.

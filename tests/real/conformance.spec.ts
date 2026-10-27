@@ -1,4 +1,6 @@
 import { desktopExpect as expect, desktopTest as test } from '../../src';
+import { desktopConfig } from '../../src/desktop';
+import { realTestsSkipReason } from '../support/realOptIn';
 import type { EnvironmentInfo } from '../../src/desktop';
 
 /**
@@ -12,6 +14,9 @@ import type { EnvironmentInfo } from '../../src/desktop';
  *
  * Settings: SAS_DESKTOP_TRANSPORT, SAS_DESKTOP_POWERSHELL, SAS_DESKTOP_SCRIPT_DIR, SAS_COM_PROGIDS, SAS_EG_PROGID, SAS_EG_PROFILE (all in .env.example).
  */
+const skipReason = realTestsSkipReason({ realTests: process.env.SAS_REAL_TESTS, simulated: desktopConfig().simulator });
+test.skip(skipReason !== undefined, skipReason ?? '');
+
 test.describe('desktop conformance (the real machine) @sas-desktop @real-conformance', () => {
   test('the bridge starts and answers @real-conformance', async ({ desktopSession }) => {
     const ping = await desktopSession.ping();
