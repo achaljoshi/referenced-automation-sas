@@ -10,7 +10,7 @@ The picture is [ADR 0001](adr/0001-sas-automation-architecture.md) (and [ADR 000
 flowchart TB
   subgraph TESTS["Test layer - src/fixtures, src/bdd, features/, tests/"]
     SPEC["specs and Gherkin steps; tags @smc-admin @smc-ui @eg-com @eg-ui @smoke @regression @sas-desktop"]
-    FIX["desktopTest: desktopSession (pre-flight gate), environment, runContext, safetyPolicy + desktopGuard,<br/>smcApp / egApp / smcLoggedOn / egLoggedOn, smc / eg / egCom, cleanup, evidence"]
+    FIX["sasTest (command line, any OS): environment, runContext, safetyPolicy, sasProcess, sasTools<br/>desktopTest = sasTest + desktopSession (pre-flight gate), desktopGuard,<br/>smcApp / egApp / smcLoggedOn / egLoggedOn, smc / eg / egCom, cleanup, evidence"]
   end
   subgraph DOMAIN["Domain layer - src/desktop/apps, src/recorder"]
     EGCOM["SasEnterpriseGuide (COM)"]
@@ -44,7 +44,7 @@ flowchart TB
 | Four mechanisms, each an `Adapter` (health, typed errors, logging, timeouts) | HTTPS: not used here (Viya is out of scope). Child process: `src/process`. PowerShell bridge speaking JSON lines: `src/desktop` + `bridge/sas-desktop-bridge.ps1`. Browser: not used here |
 | API first, GUI last | The order of preference in the [README](../README.md#the-order-of-preference): command line, COM, screens |
 | A policy gate in front of every privileged action | `src/core/safetyPolicy.ts`; plugged into the desktop layer by `src/fixtures/guardAdapter.ts` |
-| Capability-based design: a missing capability skips with a reason | Tags; the `desktopGate` fixture (`src/fixtures/index.ts`); `scripts/min-executed.js` counts the skips |
+| Capability-based design: a missing capability skips with a reason | Tags; the `desktopGate` fixture of `desktopTest` (`src/fixtures/index.ts`; `sasTest` has none, so the command line runs on every system); the opt-in of `tests/real` (`tests/support/realOptIn.ts`); `scripts/min-executed.js` counts the skips |
 | `SasCodeRunner` | Not built yet (ADR build order step 4; waits for the installation inventory) |
 
 | ADR 0001 property | Where |

@@ -130,6 +130,8 @@ test:
     # test-results: the artifacts below must come from the main run.
     - SAS_DESKTOP_SIMULATOR=true npm run test:conformance
     - SAS_DESKTOP_SIMULATOR=true npm run test:real-smoke
+    # The three sample tests (tests/real/sample_*.spec.ts) the same way. `node --version` stands in for "a command that only prints something".
+    - SAS_DESKTOP_SIMULATOR=true SAS_SAMPLE_TOOL="$(command -v node)" SAS_SAMPLE_TOOL_ARGS=--version SAS_SAMPLE_TOOL_EXPECT='^v[0-9]+\.' npm run test:real-samples
     # `bddgen` first (the Gherkin features only exist as tests after it), then every test on the stand-in desktop (the examples, the
     # sample features, the fixtures, the policy), then scripts/min-executed.js: the job FAILS when fewer tests executed than expected
     # and prints how many were skipped and why (a run that discovers tests but skips them all is not evidence of anything).
@@ -199,6 +201,30 @@ sas-desktop-smoke:
     - npm run build
     - npm run doctor
     - npm run test:real-smoke
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - logs/
+    expire_in: 30 days
+
+# The three read-only sample tests (tests/real/sample_*.spec.ts: command line, Management Console, Enterprise Guide). Point them at your installation
+# with CI/CD variables (README, "Sample tests for a machine with SAS"): SAS_SAMPLE_TOOL (+ _ARGS, _EXPECT), SAS_SAMPLE_SMC_USER, SAS_SAMPLE_EG_PROJECT, and
+# the logins and program paths of sas-desktop-smoke. They change nothing on SAS. Run conformance first.
+sas-desktop-samples:
+  stage: test
+  needs: ["build"]
+  when: manual
+  allow_failure: true
+  tags:
+    - sas-desktop-windows   # PLACEHOLDER - rename to your Windows runner's tag
+  before_script: []
+  script:
+    - if ($env:NPM_REGISTRY_URL) { npm config set registry $env:NPM_REGISTRY_URL }
+    - npm ci
+    - npm run build
+    - npm run doctor
+    - npm run test:real-samples
   artifacts:
     when: always
     paths:

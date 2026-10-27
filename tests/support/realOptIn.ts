@@ -5,7 +5,7 @@
  * set SAS_REAL_TESTS=true) or against the stand-in desktop (SAS_DESKTOP_SIMULATOR=true), which is how the pipeline keeps them honest.
  */
 export const REAL_TESTS_OPT_IN =
-  'the tests of the real SAS programs only run when asked for: use `npm run test:conformance` or `npm run test:real-smoke` (they set SAS_REAL_TESTS=true), or SAS_DESKTOP_SIMULATOR=true to run them against the stand-in desktop';
+  'the tests of the real SAS programs only run when asked for: use `npm run test:conformance`, `npm run test:real-samples` or `npm run test:real-smoke` (they set SAS_REAL_TESTS=true), or SAS_DESKTOP_SIMULATOR=true to run them against the stand-in desktop';
 
 /** Why a real-system test is skipped, or undefined when it may run. */
 export function realTestsSkipReason(facts: { realTests?: string | undefined; simulated: boolean }): string | undefined {

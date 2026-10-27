@@ -1,6 +1,7 @@
 import { test as uiTest } from '@automation/referenced-automation-ui';
 import { getLogger, type placeholders } from '@automation/referenced-automation-utils';
 import { LogonGuard, SafetyPolicy, loadEnvironments, type RunContext, type SasEnvironment } from '../core';
+import { BatchToolRunner, ProcessDriver, loadBatchToolSpecs } from '../process';
 import {
   FAKE_EG_PATH,
   FAKE_SMC_PATH,
@@ -67,7 +68,8 @@ export interface DesktopOptions {
   sasSettings: Record<string, string> | undefined;
 }
 
-export interface DesktopWorkerFixtures extends DesktopOptions {
+/** What the command-line route and the desktop route share: the settings, the run, the environment and the policy. No desktop is involved. */
+export interface SasWorkerFixtures extends DesktopOptions {
   /** Every setting the fixtures decide from the configuration, resolved once. */
   desktopSettings: FixtureSettings;
   /** The run: its id (shared by every worker), its test namespace `AUTO_<runId>`, its evidence folder. */
@@ -76,6 +78,13 @@ export interface DesktopWorkerFixtures extends DesktopOptions {
   environment: SasEnvironment;
   /** The core safety policy and its audit log. */
   safetyPolicy: SafetyPolicy;
+  /** The command-line driver, wired to the policy: every run is judged and audited. Tools are found only in SAS_TOOL_DIRS. */
+  sasProcess: ProcessDriver;
+  /** The tools described in SAS_BATCH_TOOLS_FILE, each a `BatchToolRunner` on `sasProcess`. Empty when no file is configured. NOT VERIFIED against any SAS release. */
+  sasTools: Record<string, BatchToolRunner>;
+}
+
+export interface DesktopWorkerFixtures {
   /** The adapter that plugs the policy into the desktop layer as its OperationGuard. */
   desktopGuard: PolicyGuardAdapter;
   /** Where the logins come from (the configuration, or the stand-in's demo account). */
@@ -132,27 +141,16 @@ async function openEg(session: DesktopSession, s: FixtureSettings): Promise<SasE
 }
 
 /**
- * `test` for the SAS desktop programs: Playwright's `test` (through the `ui` package's, so a test also has the scenario banner, the
- * correlation id and `vars`) plus these fixtures. Nothing opens until a test asks for it.
+ * `test` for the SAS COMMAND-LINE route (and anything else that needs no desktop): the `ui` package's `test` plus the settings, the run
+ * context, the environment, the policy and the command-line driver - and NOT the desktop gate, so it runs on Windows, macOS and Linux.
  *
- * Per WORKER (one desktop = one worker; see parallelism.ts):
- *   desktopSession   the connection to the desktop, after the pre-flight gate (SAS_PREFLIGHT, default on): one clear failure instead of hundreds
- *   environment      the selected SAS environment      runContext   the run id, namespace and evidence folder
- *   fakeDesktop      the stand-in desktop, when SAS_DESKTOP_SIMULATOR=true (or `desktopSimulator: true`): everything runs on any OS
- * Per TEST:
- *   smcApp / egApp                   the program, launched (SAS_SMC_PATH / SAS_EG_PATH) or attached, NOT logged on
- *   smcLoggedOn / egLoggedOn         the same program, logged on through the logon guard with SAS_SMC_* / SAS_EG_* (else SAS_USER / SAS_PASSWORD)
- *   smc / eg                         the wrappers (SasManagementConsole, SasEnterpriseGuideUi) around those programs
- *   egCom                            the Enterprise Guide COM driver
- *   cleanup                          register what the test creates; undone after the test, pass or fail
+ *   sasProcess   `ProcessDriver` on the policy: `await sasProcess.run({ command: 'tool', args: [...], kind: 'read', local: true })`
+ *   sasTools     the tools of SAS_BATCH_TOOLS_FILE as `BatchToolRunner`s (option tables copied from the documentation of YOUR release)
+ *   safetyPolicy, environment, runContext   as in `desktopTest`
  *
- * Every step of every driver passes the safety policy (environment kind, test namespace) and is audited. The programs a test
- * started are closed at its end; programs it only attached to are left alone. On failure (SAS_EVIDENCE) the report gets a screenshot
- * and the step journal.
- *
- * Where no desktop can be reached the test is SKIPPED with the reason - never silently passed.
+ * Every run is judged by the safety policy (environment kind, test namespace) and audited. `desktopTest` is this plus the desktop fixtures.
  */
-export const desktopTest = uiTest.extend<DesktopTestFixtures, DesktopWorkerFixtures>({
+export const sasTest = uiTest.extend<object, SasWorkerFixtures>({
   desktopSimulator: [undefined, { option: true, scope: 'worker' }],
   sasSettings: [undefined, { option: true, scope: 'worker' }],
 
@@ -190,6 +188,44 @@ export const desktopTest = uiTest.extend<DesktopTestFixtures, DesktopWorkerFixtu
     { scope: 'worker' },
   ],
 
+  sasProcess: [
+    async ({ safetyPolicy, desktopSettings }, use) => {
+      await use(new ProcessDriver({ guard: safetyPolicy, environment: desktopSettings.environmentName, env: desktopSettings.env }));
+    },
+    { scope: 'worker' },
+  ],
+
+  sasTools: [
+    async ({ sasProcess, desktopSettings }, use) => {
+      const specs = loadBatchToolSpecs(desktopSettings.env);
+      await use(Object.fromEntries(Object.entries(specs).map(([name, spec]) => [name, new BatchToolRunner(sasProcess, spec)])));
+    },
+    { scope: 'worker' },
+  ],
+});
+
+/**
+ * `test` for the SAS desktop programs: Playwright's `test` (through the `ui` package's, so a test also has the scenario banner, the
+ * correlation id and `vars`) plus these fixtures. Nothing opens until a test asks for it.
+ *
+ * Per WORKER (one desktop = one worker; see parallelism.ts):
+ *   desktopSession   the connection to the desktop, after the pre-flight gate (SAS_PREFLIGHT, default on): one clear failure instead of hundreds
+ *   environment      the selected SAS environment      runContext   the run id, namespace and evidence folder
+ *   fakeDesktop      the stand-in desktop, when SAS_DESKTOP_SIMULATOR=true (or `desktopSimulator: true`): everything runs on any OS
+ * Per TEST:
+ *   smcApp / egApp                   the program, launched (SAS_SMC_PATH / SAS_EG_PATH) or attached, NOT logged on
+ *   smcLoggedOn / egLoggedOn         the same program, logged on through the logon guard with SAS_SMC_* / SAS_EG_* (else SAS_USER / SAS_PASSWORD)
+ *   smc / eg                         the wrappers (SasManagementConsole, SasEnterpriseGuideUi) around those programs
+ *   egCom                            the Enterprise Guide COM driver
+ *   cleanup                          register what the test creates; undone after the test, pass or fail
+ *
+ * Every step of every driver passes the safety policy (environment kind, test namespace) and is audited. The programs a test
+ * started are closed at its end; programs it only attached to are left alone. On failure (SAS_EVIDENCE) the report gets a screenshot
+ * and the step journal.
+ *
+ * Where no desktop can be reached the test is SKIPPED with the reason - never silently passed.
+ */
+export const desktopTest = sasTest.extend<DesktopTestFixtures, DesktopWorkerFixtures>({
   desktopGuard: [
     async ({ safetyPolicy, desktopSettings }, use) => {
       await use(new PolicyGuardAdapter(safetyPolicy, desktopSettings.environmentName));

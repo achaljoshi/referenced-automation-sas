@@ -360,7 +360,7 @@ test.describe('the README and the guides', () => {
       for (const needle of [
         '.\\scripts\\setup.bat', '--local', '$env:', 'Remove-Item Env:', 'npm run build', 'npm run doctor', 'npm run inspect -- --app smc', 'npm run try:simulator', 'forward slashes',
         'Java Access Bridge', 'jabswitch -enable', 'restart', 'interactive', 'Copy-Item .env.local.example .env.qa.local', 'npx playwright test -g', 'show-report', 'tests/real/conformance.spec.ts',
-        'npm run test:real-smoke', 'sas-environments.json', 'SAS_LOGON_FAILURE_COOLDOWN_MIN', 'NOT VERIFIED',
+        'npm run test:real-smoke', 'npm run test:conformance', 'npm run test:real-samples', 'SAS_REAL_TESTS', 'sas-environments.json', 'SAS_LOGON_FAILURE_COOLDOWN_MIN', 'NOT VERIFIED',
       ])
         expect(text, `${file}: ${needle}`).toContain(needle);
     }
@@ -435,7 +435,8 @@ test.describe('the README and the guides', () => {
   });
 
   test('the safety rules are in one table, naming every rule of the policy that a test can meet', () => {
-    const table = readme.slice(readme.indexOf('## Safety rules'), readme.indexOf('## Windows first run'));
+    const from = readme.indexOf('## Safety rules');
+    const table = readme.slice(from, readme.indexOf('\n## ', from + 1)); // up to the next section, wherever it is
     for (const needle of ['unknown-environment', 'host-not-allowed', 'prod-read-only', 'prod-reads-disabled', 'outside-namespace', 'SAS_ALLOW_OUTSIDE_NAMESPACE_REASON', 'SAS_LOGON_FAILURE_COOLDOWN_MIN', 'One desktop, one worker', 'bridge script is verified']) expect(table, needle).toContain(needle);
   });
 

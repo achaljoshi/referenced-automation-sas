@@ -31,6 +31,7 @@
     "test:regression": "bddgen && playwright test --grep @regression && node scripts/min-executed.js --min 3",
     "test:conformance": "node scripts/run-real.js @real-conformance",
     "test:real-smoke": "node scripts/run-real.js @real-smoke",
+    "test:real-samples": "node scripts/run-real.js @real-sample",
     "try:simulator": "node scripts/try-simulator.js",
     "pretest": "npm run build",
     "prepack": "npm run build",

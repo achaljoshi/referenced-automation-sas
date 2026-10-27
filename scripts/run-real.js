@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Runs the tests of the REAL SAS programs on purpose: `node scripts/run-real.js @real-conformance` or `@real-smoke`.
+ * Runs the tests of the REAL SAS programs on purpose: `node scripts/run-real.js @real-conformance`, `@real-smoke` or `@real-sample`.
  *
  * They are skipped in every other run (see tests/support/realOptIn.ts), so `npm test` never opens the real programs or types a login.
  * This launcher sets SAS_REAL_TESTS=true for the one Playwright run it starts - the same on Windows, macOS and Linux (no `set X=1 &&`
@@ -9,10 +9,11 @@
  *
  *   node scripts/run-real.js @real-conformance [more playwright arguments]
  *   node scripts/run-real.js @real-smoke
+ *   node scripts/run-real.js @real-sample     the read-only samples (tests/real/sample_*.spec.ts)
  */
 const { spawnSync } = require('node:child_process');
 
-const TAGS = ['@real-conformance', '@real-smoke'];
+const TAGS = ['@real-conformance', '@real-smoke', '@real-sample'];
 const [tag, ...rest] = process.argv.slice(2);
 if (!TAGS.includes(tag)) {
   process.stderr.write(`usage: node scripts/run-real.js ${TAGS.join(' | ')} [playwright arguments]\n`);

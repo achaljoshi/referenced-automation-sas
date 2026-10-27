@@ -7,6 +7,7 @@ import { readAudit } from '../../src/core';
 import { DesktopSession, FAKE_EG_PATH, FAKE_PROJECT_PATH, ProcessTransport, startFakeDesktop, type FakeSasDesktop } from '../../src/desktop';
 import { authorizeRecording, parseRecording, Recorder, saveRecording, summarizeRecording, validateRecording, type RecorderProgress, type Recording, type UserAction } from '../../src/recorder';
 import { config, makePolicy, tempDir } from '../core/support';
+import { STARTUP_BUDGET_MS } from '../desktop/support';
 import { builtStandIn } from './support/built';
 import { egRunProject } from './support/scenarios';
 
@@ -172,7 +173,7 @@ test.describe('over the real line protocol', () => {
       label: 'Stand-in',
       env: { ...process.env, LOG_TO_FILE: 'false' },
       requestTimeoutMs: 8000,
-      startupTimeoutMs: 8000,
+      startupTimeoutMs: STARTUP_BUDGET_MS,
     });
     const session = new DesktopSession(transport, { timeoutMs: 5000, pollMs: 10 });
     await session.launch({ path: FAKE_EG_PATH, windowTitle: /./ });

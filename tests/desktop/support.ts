@@ -114,3 +114,10 @@ export function runNode(args: string[], env: Record<string, string> = {}): { sta
 }
 
 export const repoRoot = root;
+
+/**
+ * How long a test that EXPECTS the bridge to start waits for it. The stand-in bridge is a child Node process: on a machine running 20+
+ * workers its start can take several seconds, and a budget of 4-5 s made the suite fail on load and pass in isolation. Tests that check the
+ * TIMEOUT itself keep their own small values; they are the ones that expect the start to fail.
+ */
+export const STARTUP_BUDGET_MS = 30_000;

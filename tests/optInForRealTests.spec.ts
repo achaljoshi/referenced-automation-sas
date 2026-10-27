@@ -8,6 +8,7 @@ test.describe('the tests of the real SAS programs are opt-in', () => {
   test('without the opt-in and without the stand-in they are skipped, and the reason says how to run them', () => {
     for (const realTests of [undefined, '', 'false', '0', 'no']) expect(realTestsSkipReason({ realTests, simulated: false }), String(realTests)).toBe(REAL_TESTS_OPT_IN);
     expect(REAL_TESTS_OPT_IN).toContain('npm run test:conformance');
+    expect(REAL_TESTS_OPT_IN).toContain('npm run test:real-samples');
     expect(REAL_TESTS_OPT_IN).toContain('npm run test:real-smoke');
   });
 
@@ -30,6 +31,7 @@ test.describe('the tests of the real SAS programs are opt-in', () => {
     const scripts = (JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts;
     expect(scripts['test:conformance']).toBe('node scripts/run-real.js @real-conformance');
     expect(scripts['test:real-smoke']).toBe('node scripts/run-real.js @real-smoke');
+    expect(scripts['test:real-samples']).toBe('node scripts/run-real.js @real-sample');
     const launcher = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'run-real.js'), 'utf8');
     expect(launcher).toContain("SAS_REAL_TESTS: 'true'");
     expect(launcher).not.toMatch(/shell:\s*true/);

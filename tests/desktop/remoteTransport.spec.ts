@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { remote, testing } from '@automation/referenced-automation-utils';
 import { assertBridgeVerified, bridgeHash, BRIDGE_SHA256, DesktopTransportError, RemoteTransport, readBridgeScript } from '../../src/desktop';
-import { standInBridge, withEnv } from './support';
+import { STARTUP_BUDGET_MS, standInBridge, withEnv } from './support';
 
 // RemoteTransport against a fake host object and against the utils package's STAND-IN agent hosting the stand-in bridge.
 // NOT VERIFIED on a real RDP host with a real agent.
@@ -23,7 +23,9 @@ async function rig(allow: remote.RemoteCapability[] = ['http', 'db', 'sap']): Pr
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sas-remote-'));
   const agent = new testing.StandInAgent({ shareDir: dir, allow });
   await agent.start();
-  const host = new remote.RemoteHost(testing.standInRemoteConfig(dir, { allow }));
+  // the stand-in agent's defaults (stale after 1 s, connect within 5 s) are for tests that WANT a stale agent; none here does, and under load a
+  // child process that is slow to answer looked like a dead agent. Relaxed so a busy machine does not fail the suite.
+  const host = new remote.RemoteHost(testing.standInRemoteConfig(dir, { allow, heartbeatStaleMs: 30_000, connectTimeoutMs: STARTUP_BUDGET_MS, requestTimeoutMs: STARTUP_BUDGET_MS }));
   await host.connect();
   const procs = () => (agent as unknown as { procs: Hosted }).procs;
   return {
@@ -87,7 +89,7 @@ test.describe('RemoteTransport runs the bridge on the remote desktop host', () =
 
   test('starts, answers requests, and close() stops the remote process but leaves the RemoteHost usable', async () => {
     r = await rig();
-    const t = await RemoteTransport.start({ host: r.host, bridgeFile: standInBridge(), requestTimeoutMs: 2000, startupTimeoutMs: 4000 });
+    const t = await RemoteTransport.start({ host: r.host, bridgeFile: standInBridge(), requestTimeoutMs: 2000, startupTimeoutMs: STARTUP_BUDGET_MS });
     expect(r.live()).toBe(1);
     expect(await t.request({ op: 'ping' })).toMatchObject({ bridge: 'sas-desktop-bridge' });
     await t.close();
@@ -99,7 +101,7 @@ test.describe('RemoteTransport runs the bridge on the remote desktop host', () =
 
   test('the allow-list reaches the remote bridge as an argument: a class outside it is DENIED', async () => {
     r = await rig();
-    const t = await RemoteTransport.start({ host: r.host, bridgeFile: standInBridge(), allowProgIds: ['SASEGObjectModel.Application.*'], startupTimeoutMs: 4000 });
+    const t = await RemoteTransport.start({ host: r.host, bridgeFile: standInBridge(), allowProgIds: ['SASEGObjectModel.Application.*'], startupTimeoutMs: STARTUP_BUDGET_MS });
     expect((await caught(t.request({ op: 'com.create', progId: 'SASObjectManager.X' })))?.code).toBe('DENIED');
     expect(await t.request({ op: 'com.create', progId: 'SASEGObjectModel.Application.8.3' })).toMatchObject({ handle: expect.any(String) });
     await t.close();
@@ -107,7 +109,7 @@ test.describe('RemoteTransport runs the bridge on the remote desktop host', () =
 
   test('the codes survive: NOT_FOUND, DENIED, SESSION_LOST; null and structured values arrive intact', async () => {
     r = await rig();
-    const t = await withEnv({ BRIDGE_SESSION_LOST_OP: 'windows' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), startupTimeoutMs: 4000 }));
+    const t = await withEnv({ BRIDGE_SESSION_LOST_OP: 'windows' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), startupTimeoutMs: STARTUP_BUDGET_MS }));
     expect((await caught(t.request({ op: 'info', ref: 'e99999' })))?.code).toBe('NOT_FOUND');
     expect((await caught(t.request({ op: 'com.create', progId: 'WScript.Shell' })))?.code).toBe('DENIED');
     expect((await caught(t.request({ op: 'windows' })))?.code).toBe('SESSION_LOST');
@@ -118,7 +120,7 @@ test.describe('RemoteTransport runs the bridge on the remote desktop host', () =
 
   test('concurrent requests get their own replies even when the bridge answers out of order', async () => {
     r = await rig();
-    const t = await withEnv({ BRIDGE_DELAY_OPS: 'ping:300' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), startupTimeoutMs: 4000 }));
+    const t = await withEnv({ BRIDGE_DELAY_OPS: 'ping:300' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), startupTimeoutMs: STARTUP_BUDGET_MS }));
     const [slow, fast, again] = await Promise.all([t.request({ op: 'ping' }), t.request({ op: 'environment' }), t.request({ op: 'ping' })]);
     expect([!!slow, (fast as { uiaAvailable: boolean }).uiaAvailable, !!again]).toEqual([true, true, true]);
     await t.close();
@@ -126,7 +128,7 @@ test.describe('RemoteTransport runs the bridge on the remote desktop host', () =
 
   test('a non-JSON line before the ready message is skipped, not fatal', async () => {
     r = await rig();
-    const t = await withEnv({ BRIDGE_JUNK: '1' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), startupTimeoutMs: 4000 }));
+    const t = await withEnv({ BRIDGE_JUNK: '1' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), startupTimeoutMs: STARTUP_BUDGET_MS }));
     expect(await t.request({ op: 'ping' })).toBeTruthy();
     await t.close();
   });
@@ -141,7 +143,7 @@ test.describe('RemoteTransport runs the bridge on the remote desktop host', () =
 
   test('a request that gets no reply: TIMEOUT, the remote process is killed, and later requests fail at once', async () => {
     r = await rig();
-    const t = await withEnv({ BRIDGE_HANG_OPS: 'environment' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), requestTimeoutMs: 400, startupTimeoutMs: 4000 }));
+    const t = await withEnv({ BRIDGE_HANG_OPS: 'environment' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), requestTimeoutMs: 400, startupTimeoutMs: STARTUP_BUDGET_MS }));
     expect(r.live()).toBe(1);
     const first = await caught(t.request({ op: 'environment' }));
     expect(first?.code).toBe('TIMEOUT');
@@ -157,7 +159,7 @@ test.describe('RemoteTransport runs the bridge on the remote desktop host', () =
 
   test('requests queued behind the one that times out fail at once instead of waiting their own timeout', async () => {
     r = await rig();
-    const t = await withEnv({ BRIDGE_HANG_OPS: 'environment' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), requestTimeoutMs: 400, startupTimeoutMs: 4000 }));
+    const t = await withEnv({ BRIDGE_HANG_OPS: 'environment' }, () => RemoteTransport.start({ host: r!.host, bridgeFile: standInBridge(), requestTimeoutMs: 400, startupTimeoutMs: STARTUP_BUDGET_MS }));
     const startedAt = Date.now();
     const results = await Promise.all([caught(t.request({ op: 'environment' })), caught(t.request({ op: 'ping' })), caught(t.request({ op: 'ping' }))]);
     expect(results.map((e) => e?.code)).toEqual(['TIMEOUT', 'BRIDGE_EXITED', 'BRIDGE_EXITED']);

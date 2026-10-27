@@ -41,3 +41,5 @@ The sample Enterprise Guide project is filed under the run's namespace on purpos
 ## Against the real programs
 
 The stand-in proves the framework's flows, **not** that SAS looks like this (NOT VERIFIED on a real desktop). To run an example against the real programs: in `tests/examples/support/exampleTest.ts` delete the two worker options (`desktopSimulator`, `sasSettings`), fill in `.env.<ENV>` and `.env.<ENV>.local` ([README, Windows first run](../README.md#windows-first-run-powershell-from-zero-to-your-first-test)), change the `CONSTANTS` at the top of the example to names that exist in your SAS system, and run it by path with forward slashes: `npx playwright test tests/examples/01_management_console.spec.ts`.
+
+For a first run on the machine where SAS is installed, use the read-only [sample tests](../README.md#sample-tests-for-a-machine-with-sas) (`npm run test:real-samples`) before changing an example: they take what to look at from `SAS_SAMPLE_*` settings and never hard-code a name from the stand-in.

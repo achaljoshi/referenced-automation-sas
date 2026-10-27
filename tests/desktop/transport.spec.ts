@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { APPROVED_SCRIPT_NAME, bridgeScriptPath, DesktopSession, DesktopTransportError, PowerShellTransport, ProcessTransport } from '../../src/desktop';
-import { standInBridge, tempDir, withEnv } from './support';
+import { STARTUP_BUDGET_MS, standInBridge, tempDir, withEnv } from './support';
 
 // ProcessTransport and PowerShellTransport against the Node stand-in bridge (a real child process speaking the real line protocol).
 // The PowerShell bridge itself is NOT VERIFIED on Windows.
@@ -13,7 +13,7 @@ const exited = (t: ProcessTransport) =>
   new Promise<void>((resolve) => (childOf(t).exitCode !== null || childOf(t).signalCode !== null ? resolve() : childOf(t).once('exit', () => resolve())));
 
 const start = (env: NodeJS.ProcessEnv = {}, extra: Partial<Parameters<typeof ProcessTransport.start>[0]> = {}) =>
-  ProcessTransport.start({ command: process.execPath, args: [standInBridge()], label: 'Stand-in', env: { ...process.env, LOG_TO_FILE: 'false', ...env }, requestTimeoutMs: 2000, startupTimeoutMs: 5000, ...extra });
+  ProcessTransport.start({ command: process.execPath, args: [standInBridge()], label: 'Stand-in', env: { ...process.env, LOG_TO_FILE: 'false', ...env }, requestTimeoutMs: 2000, startupTimeoutMs: STARTUP_BUDGET_MS, ...extra });
 const caught = (p: Promise<unknown>) => p.then(() => undefined, (e: unknown) => e as DesktopTransportError);
 
 test.describe('ProcessTransport speaks the bridge protocol', () => {
@@ -164,7 +164,7 @@ require(${JSON.stringify(standInBridge())}).runStandInBridge(argv);
   test('default: a temporary copy of the verified bytes, -NoProfile -ExecutionPolicy Bypass -File, the allow-list as -AllowProgIds; the copy is deleted on close', async () => {
     const { exe, record } = fakePowerShell();
     const tmp = tempDir();
-    const t = await withEnv({ LOG_TO_FILE: 'false' }, () => PowerShellTransport.start({ platform: 'win32', powershellPath: exe, allowProgIds: ['SASEGObjectModel.Application.*'], tmpDir: tmp, startupTimeoutMs: 5000, requestTimeoutMs: 3000 }));
+    const t = await withEnv({ LOG_TO_FILE: 'false' }, () => PowerShellTransport.start({ platform: 'win32', powershellPath: exe, allowProgIds: ['SASEGObjectModel.Application.*'], tmpDir: tmp, startupTimeoutMs: STARTUP_BUDGET_MS, requestTimeoutMs: 3000 }));
     const seen = read(record);
     expect(seen.argv).toEqual(expect.arrayContaining(['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File']));
     expect(seen.scriptExistsWhileRunning).toBe(true);
@@ -182,7 +182,7 @@ require(${JSON.stringify(standInBridge())}).runStandInBridge(argv);
     const { exe, record } = fakePowerShell();
     const dir = tempDir();
     fs.copyFileSync(bridgeScriptPath(), path.join(dir, APPROVED_SCRIPT_NAME));
-    const t = await PowerShellTransport.start({ platform: 'win32', powershellPath: exe, scriptDir: dir, startupTimeoutMs: 5000 });
+    const t = await PowerShellTransport.start({ platform: 'win32', powershellPath: exe, scriptDir: dir, startupTimeoutMs: STARTUP_BUDGET_MS });
     const seen = read(record);
     expect(seen.argv).not.toContain('-ExecutionPolicy');
     expect(seen.argv).not.toContain('Bypass');
@@ -201,7 +201,7 @@ require(${JSON.stringify(standInBridge())}).runStandInBridge(argv);
 
   test('a session works end to end through it', async () => {
     const { exe } = fakePowerShell();
-    const t = await withEnv({ LOG_TO_FILE: 'false' }, () => PowerShellTransport.start({ platform: 'win32', powershellPath: exe, startupTimeoutMs: 5000 }));
+    const t = await withEnv({ LOG_TO_FILE: 'false' }, () => PowerShellTransport.start({ platform: 'win32', powershellPath: exe, startupTimeoutMs: STARTUP_BUDGET_MS }));
     const session = new DesktopSession(t, { timeoutMs: 3000, pollMs: 10 });
     expect(await session.healthCheck()).toBe(true);
     await session.close();
