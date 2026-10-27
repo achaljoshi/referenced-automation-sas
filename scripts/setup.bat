@@ -29,6 +29,13 @@ if defined NPM_REGISTRY_URL (
   echo NOTE: NPM_REGISTRY_URL is not set - npm keeps using the registry it is already configured with.
 )
 
+REM Fail early, with the fix, if Node does not trust the HTTPS certificate of the registry (and of the browser download host) -
+REM usually a company proxy that re-signs HTTPS. The fix is NODE_EXTRA_CA_CERTS, never NODE_TLS_REJECT_UNAUTHORIZED=0.
+set "TLS_ARGS=--browsers"
+if "%PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD%"=="1" set "TLS_ARGS="
+call node scripts\check-tls.js %TLS_ARGS%
+if errorlevel 1 exit /b 1
+
 if "%LOCAL%"=="1" (
   echo.
   echo == Local mode: making sure the @automation packages exist in %SHARED_PACKAGES_DIR% ==

@@ -30,6 +30,12 @@ else
   echo "NOTE: NPM_REGISTRY_URL is not set - npm keeps using the registry it is already configured with ($(npm config get registry))."
 fi
 
+# Fail early, with the fix, if Node does not trust the HTTPS certificate of the registry (and of the browser download host) - usually a company proxy that
+# re-signs HTTPS. The fix is NODE_EXTRA_CA_CERTS, never NODE_TLS_REJECT_UNAUTHORIZED=0 (scripts/check-tls.js explains).
+TLS_ARGS="--browsers"
+if [ "${PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD:-}" = "1" ]; then TLS_ARGS=""; fi
+node scripts/check-tls.js $TLS_ARGS || exit 1
+
 SHARED_PACKAGES_DIR="../shared-packages"
 
 # Builds <repo_name> into $SHARED_PACKAGES_DIR if no tarball of it is there yet. Needs <repo_name> checked out as a

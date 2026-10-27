@@ -12,5 +12,11 @@
     "dist": true,
     "test-results": true,
     "playwright-report": true
-  }
+  },
+  "cucumber.features": ["features/**/*.feature"],
+  "cucumber.glue": [
+    "features/**/*.ts",
+    "src/bdd/*.ts",
+    "node_modules/@automation/referenced-automation-ui/dist/bdd/dataSteps.js"
+  ]
 }

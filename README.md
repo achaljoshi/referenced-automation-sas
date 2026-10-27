@@ -57,6 +57,8 @@ npm run try:simulator   # the worked examples, with what each one does printed f
 | **The machine with SAS installed** (Windows) | [Windows first run](#windows-first-run-powershell-from-zero-to-your-first-test), then the [sample tests](#sample-tests-for-a-machine-with-sas) |
 | Any other machine | `npm run try:simulator`, read [`examples/README.md`](examples/README.md), write your first test from [Using it from the command line](#using-it-from-the-command-line) or [Using it for the desktop](#using-it-for-the-desktop) |
 
+**Setup stops with a certificate error** (`self-signed certificate in certificate chain`, `unable to get local issuer certificate`)? A company proxy that re-signs HTTPS with its own root certificate is the usual cause. `setup` checks for it first (`scripts/check-tls.js`: the npm registry and, where browsers are installed, the Playwright download host) and prints the exact fix: give Node the company root CA certificate (a `.pem` file from IT) through `NODE_EXTRA_CA_CERTS`, or on Node 22.15 or newer let it read the operating system's certificate store with `NODE_OPTIONS=--use-system-ca`. Do not work around it with `NODE_TLS_REJECT_UNAUTHORIZED=0`: that turns certificate checking off for every Node program started from that shell, npm included. The check connects directly from this machine; it does not use a proxy setting, so a machine that can only reach the registry through a proxy shows "could not connect" and setup carries on.
+
 ## Windows first run (PowerShell, from zero to your first test)
 
 For a Windows machine (an AWS WorkSpace, a laptop) with the SAS programs and VS Code. Commands are PowerShell: run them in the VS Code terminal (**Terminal > New Terminal**, the shell must say `PowerShell`). The longer walk-through is [`docs/WINDOWS_FIRST_RUN.md`](docs/WINDOWS_FIRST_RUN.md).
@@ -512,6 +514,8 @@ Use this when the packages are not in a registry yet, or you want to try a chang
 ## IDE setup
 
 Same as the other repos in this family: VS Code prompts for recommended extensions on open; the shared settings and the debug configurations are committed.
+
+**Gherkin step navigation (VS Code).** Ctrl/Cmd-click on a step in a `.feature` file opens its definition when the official *Cucumber* extension (`cucumberopen.cucumber-official`, recommended when you open the folder) knows where the steps are. `.vscode/settings.json` tells it (`cucumber.glue`): this repo's `features/steps`, the desktop vocabulary in `src/bdd` and the data steps compiled into the `@automation/referenced-automation-ui` package. Without that setting the extension reads only `features/`, so the shared steps ("I click the button ...") show as undefined and do not open anything. If *Cucumber (Gherkin) Full Support* (`alexkrechik.cucumberautocomplete`) is also installed, disable it for this workspace so the two do not both answer. Run `npm ci` first (the packaged steps are read from `node_modules`) and reload the window once after changing the setting.
 
 ## Testing this package itself
 
