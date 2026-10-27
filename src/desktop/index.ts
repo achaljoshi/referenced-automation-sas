@@ -25,4 +25,5 @@ export * from './apps/enterpriseGuide';
 export * from './apps/enterpriseGuideUi';
 export * from './apps/managementConsole';
 export * from './doctor';
+export * from './platform';
 export * from './inspect';

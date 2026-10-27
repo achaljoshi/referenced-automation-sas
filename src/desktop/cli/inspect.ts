@@ -5,6 +5,7 @@ import { BRIDGE_SHA256 } from '../bridgeHash.generated';
 import { formatDoctor, runDoctor } from '../doctor';
 import { FAKE_EG_PATH, FAKE_SMC_PATH } from '../fakeApps';
 import { formatInspection, formatWindows, inspectWindows, windowPatternFor } from '../inspect';
+import { describePlatform, formatPlatform } from '../platform';
 import { openDesktopSession } from '../transportFactory';
 
 const USAGE = `sas-desktop-inspect - see what the SAS desktop programs look like to the automation, and whether this machine is ready
@@ -40,6 +41,13 @@ async function main(args: string[]): Promise<number> {
     return 0;
   }
   const config = { ...desktopConfig(), ...(args.includes('--simulator') ? { simulator: true } : {}) };
+  const platform = describePlatform({ transport: config.transport, simulated: config.simulator });
+  if (command === 'doctor') process.stdout.write(`${formatPlatform(platform)}\n\n`);
+  if (command === 'doctor' && !platform.capabilities.find((c) => c.id === 'desktop')?.available) {
+    // not an error: the command-line half of the package works here; only the Windows desktop is out of reach
+    process.stdout.write('The desktop checks were not run: this system cannot reach a Windows desktop (see above). Run `doctor` on the Windows machine.\n');
+    return 0;
+  }
   const opened = await openDesktopSession({ config });
   try {
     if (config.simulator) {

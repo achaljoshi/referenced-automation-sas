@@ -206,6 +206,47 @@ sas-desktop-smoke:
       - logs/
     expire_in: 30 days
 
+# ---- The same suite on Windows and macOS (manual templates) ----
+#
+# The `test` job above runs the whole suite on Linux. These two run it on the other systems the package supports (docs/PLATFORMS.md), so a
+# change that works on Linux but not on Windows is seen. NOT VERIFIED: replace the placeholder tags with your runners' tags first. On
+# Windows the tests that need the real desktop are skipped with the reason unless the runner is the interactive SAS desktop.
+test-windows:
+  stage: test
+  needs: ["build"]
+  when: manual
+  allow_failure: true
+  tags:
+    - sas-desktop-windows   # PLACEHOLDER - rename to your Windows runner's tag
+  before_script: []
+  script:
+    - if ($env:NPM_REGISTRY_URL) { npm config set registry $env:NPM_REGISTRY_URL }
+    - npm ci
+    - npm run test:ci
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - logs/
+    expire_in: 30 days
+
+test-macos:
+  stage: test
+  needs: ["build"]
+  when: manual
+  allow_failure: true
+  tags:
+    - macos   # PLACEHOLDER - rename to your macOS runner's tag
+  script:
+    - npm ci
+    - npm run test:ci
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - logs/
+    expire_in: 30 days
+
 # ---- Security gates: dependency audit + secret scan ----
 #
 # automation-audit-gate fails on high/critical advisories unless audit-allowlist.json accepts them - each exception

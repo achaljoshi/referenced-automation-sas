@@ -234,9 +234,13 @@ test.describe('the sas-desktop-inspect command (built stand-in, --simulator)', (
     expect(run.stdout).toMatch(/expected SHA-256: [0-9a-f]{64}/);
   });
 
-  test('without --simulator on a machine that is not Windows, doctor fails with the reason instead of crashing', () => {
+  test('without --simulator on a machine that is not Windows, doctor reports what works here and what does not, and is not an error', () => {
+    test.skip(process.platform === 'win32', 'this is the case of a system that is not Windows');
     const run = runNode([builtInspectCli(), 'doctor'], { SAS_DESKTOP_SIMULATOR: 'false' });
-    expect(run.status).toBe(1);
-    expect(run.stderr).toMatch(/Windows-only/);
+    expect(run.status, run.stdout + run.stderr).toBe(0);
+    expect(run.stdout).toMatch(/Operating system: /);
+    expect(run.stdout).toMatch(/NO\s+real Management Console and Enterprise Guide/);
+    expect(run.stdout).toMatch(/yes\s+command-line tools/);
+    expect(run.stdout).toMatch(/desktop checks were not run/);
   });
 });

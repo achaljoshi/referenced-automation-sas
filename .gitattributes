@@ -1,6 +1,17 @@
+# Every text file is stored and checked out with LF line endings on every operating system. Without this, a Windows checkout with
+# core.autocrlf=true turns the committed generated tests, the .env examples and the Gherkin files into CRLF, and the tests that
+# compare them with what the generators write (or count their lines) fail on Windows only.
+* text=auto eol=lf
+
 # Scripts must keep the line endings their interpreter expects, regardless
 # of the platform they're edited on or git's core.autocrlf setting - a
 # batch file with LF-only line endings is unreliable for multi-line
 # if/else ( ... ) blocks on cmd.exe.
 *.sh text eol=lf
 *.bat text eol=crlf
+
+# Binary files are left alone.
+*.png binary
+*.jpg binary
+*.zip binary
+*.tgz binary

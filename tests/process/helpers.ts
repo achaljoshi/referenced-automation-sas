@@ -2,10 +2,20 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { AuditLog, SafetyPolicy, type OperationGuard, type Operation, type OperationResult } from '../../src/core';
-import { ProcessDriver, type ProcessDriverOptions } from '../../src/process';
+import { ProcessDriver, type ProcessDriverOptions, type ProcessResult, type RunOptions } from '../../src/process';
 import { config, makeRun, registry, tempDir } from '../core/support';
 
 export const FAKE_TOOL_SOURCE = path.join(__dirname, 'support', 'fake-batch-tool.js');
+
+/**
+ * Windows runs only .exe files, so a script with a shebang cannot be started by its bare name there. On Windows the fake tool is started
+ * as `node <script>` by absolute path instead. SAS_TEST_NODE_LAUNCH=1 takes the same route on any system, which is how that path is
+ * exercised on macOS and Linux (NOT VERIFIED on Windows itself until the suite has run there).
+ */
+export const LAUNCH_BY_NODE = process.platform === 'win32' || process.env.SAS_TEST_NODE_LAUNCH === '1';
+
+/** The reason shown for a test that needs the fake tool started by its bare name, which Windows cannot do. */
+export const BARE_NAME_NEEDS_UNIX = 'a script cannot be started by its bare name on Windows (only .exe files run); resolution with .exe is covered by the fake-platform test';
 
 /** A tool folder holding the fake batch tool under the name `fakebatch` (a script with an absolute-path shebang, executable). */
 export function toolDir(): string {
@@ -31,8 +41,16 @@ export class RecordingGuard implements OperationGuard {
   }
 }
 
+/** Where the bare-name script cannot run, `fakebatch` is started as `node <script>` by absolute path: same arguments, same driver rules. */
+class NodeLaunchDriver extends ProcessDriver {
+  override async run(options: RunOptions): Promise<ProcessResult> {
+    if (!LAUNCH_BY_NODE || options.command !== 'fakebatch') return super.run(options);
+    return super.run({ ...options, command: process.execPath, args: [FAKE_TOOL_SOURCE, ...(options.args ?? [])] });
+  }
+}
+
 export function driver(options: Partial<ProcessDriverOptions> = {}, guard: OperationGuard = new RecordingGuard()): ProcessDriver {
-  return new ProcessDriver({ guard, environment: 'dev', env: config(), toolDirs: [], killGraceMs: 150, drainMs: 150, ...options });
+  return new NodeLaunchDriver({ guard, environment: 'dev', env: config(), toolDirs: [], killGraceMs: 150, drainMs: 150, ...options });
 }
 
 /** The real policy writing to a temp audit file. */

@@ -322,6 +322,10 @@ npm test                        # everything
 
 It proves the framework's flows - waiting, retries, the policy, the logon guard, clean-up - **not** that SAS looks like this. The stand-in brings its own programs, profiles and demo login: what you configured for the real programs (`SAS_ENVIRONMENT`, the paths and profiles, the logins) is **ignored** while it is in use - a real password is never typed into a fake, and the tests behave the same on every machine. A test can supply them on purpose through the `sasSettings` option. For the duration of each test the fixtures put the stand-in's own login and profile names into `SAS_USER`, `SAS_PASSWORD`, `SAS_SMC_PROFILE` and `SAS_EG_PROFILE` (and put the environment back), so a converted recording that reads them works unchanged.
 
+## Operating systems
+
+Windows, macOS and Linux. Everything runs on all three except the real SAS programs: they are reached through Windows UI Automation and COM, so they need Windows (or `SAS_DESKTOP_TRANSPORT=remote` pointing at a Windows host); elsewhere those tests are skipped with the reason. `npm run doctor` prints what works on the machine it runs on. Details, the status of each system (Windows is NOT VERIFIED) and the rules for new code: [`docs/PLATFORMS.md`](docs/PLATFORMS.md).
+
 ## Tests of this repo
 
 | Command | What it runs |

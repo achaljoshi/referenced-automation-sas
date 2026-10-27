@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 import { PolicyViolation, readAudit } from '../../src/core';
 import { ProcessDriver, ProcessError, describeCommand, killProcessTree, resolveTool, windowsTreeKill } from '../../src/process';
 import { config, tempDir, useCleanSasEnv } from '../core/support';
-import { FAKE_TOOL_SOURCE, RecordingGuard, driver, isAlive, realPolicy, toolDir, waitUntil } from './helpers';
+import { BARE_NAME_NEEDS_UNIX, FAKE_TOOL_SOURCE, LAUNCH_BY_NODE, RecordingGuard, driver, isAlive, realPolicy, toolDir, waitUntil } from './helpers';
 
 useCleanSasEnv();
 
@@ -44,6 +44,7 @@ test.describe('no shell: the arguments are an array', () => {
 
 test.describe('where the program comes from', () => {
   test('a bare name is found only in SAS_TOOL_DIRS (comma-separated); PATH and the working directory are never searched', async () => {
+    test.skip(LAUNCH_BY_NODE, BARE_NAME_NEEDS_UNIX);
     const dir = toolDir();
     const viaConfig = new ProcessDriver({ guard: new RecordingGuard(), environment: 'dev', env: config({ SAS_TOOL_DIRS: `${path.join(tempDir(), 'missing')}, ${dir}` }) });
     expect(viaConfig.toolDirs).toHaveLength(2);
@@ -83,6 +84,7 @@ test.describe('where the program comes from', () => {
   });
 
   test('an absolute path outside the folders is allowed by default (explicit path) and refused when explicit paths are off', async () => {
+    test.skip(LAUNCH_BY_NODE, BARE_NAME_NEEDS_UNIX);
     expect((await driver().run(fake('out=ok'))).exitCode).toBe(0);
     const error = (await driver({ allowExplicitPaths: false, toolDirs: [tempDir()] }).run(fake('out=ok')).catch((e: unknown) => e)) as ProcessError;
     expect(error.code).toBe('tool-not-allowed');
