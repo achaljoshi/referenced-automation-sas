@@ -74,7 +74,7 @@
   "dependencies": {
     "@automation/referenced-automation-api": "^1.0.0",
     "@automation/referenced-automation-ui": "^1.0.0",
-    "@automation/referenced-automation-utils": "^1.0.0"
+    "@automation/referenced-automation-utils": "^1.0.1"
   },
   "bin": {
     "sas-desktop-inspect": "./dist/desktop/cli/inspect.js",
