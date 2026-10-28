@@ -8,7 +8,7 @@ In PowerShell:
 
 - an environment variable is set with `$env:NAME = "value"` and removed with `Remove-Item Env:NAME`; `set NAME=value` (cmd.exe) does nothing there;
 - list what is set with `Get-ChildItem Env:SAS_*`: **a variable set in your shell wins over every `.env` file**, which is the first thing to look at when a value "does not take";
-- paths to tests use **forward slashes** after `npx playwright test` (`tests/real/smoke.spec.ts`): a backslash path gives `No tests found`;
+- paths to tests use **forward slashes** after `npx playwright test` (`tests/real/conformance.spec.ts`): a backslash path gives `No tests found`;
 - inside this repo the tools run through npm (`npm run doctor`); the `npx sas-desktop-inspect` name exists only in projects that depend on this package.
 
 ## 0. What you need
@@ -85,7 +85,7 @@ npx playwright test -g "User Manager"                      # one test, by part o
 npx playwright show-report                                 # the report: screenshot, step journal and "On the screen now" on a failure
 ```
 
-The tests of the real programs only run when asked for: a plain `npm test` skips them with the reason, so it never opens SAS or types a login. The three `test:real-*` / `test:conformance` scripts ask for them (they set `SAS_REAL_TESTS=true`). To run one of them with `npx playwright test`, set `$env:SAS_REAL_TESTS = "true"` first. The samples are described in the [README](../README.md#sample-tests-for-a-machine-with-sas); what to point them at (`SAS_SAMPLE_TOOL`, `SAS_SAMPLE_EG_PROJECT`, ...) is in `.env.example`, section 12.
+The tests of the real programs only run when asked for: a plain `npm test` skips them with the reason, so it never opens SAS or types a login. The three `test:real-*` / `test:conformance` scripts ask for them (they set `SAS_REAL_TESTS=true`). To run one of them with `npx playwright test`, set `$env:SAS_REAL_TESTS = "true"` first (the samples and the smoke checks are Gherkin: `npx bddgen`, then `--project=bdd-real`). The samples are described in the [README](../README.md#sample-tests-for-a-machine-with-sas); what to point them at (`SAS_SAMPLE_TOOL`, `SAS_SAMPLE_EG_PROJECT`, ...) is in `.env.example`, section 12.
 
 Conformance first: it tells you whether the stand-in's assumptions hold on this machine. If a logon fails, **do not run again** until the credentials are fixed.
 
@@ -95,7 +95,7 @@ To run your own test against the real programs, use `desktopTest` from `src/fixt
 
 | Message | What to do |
 |---|---|
-| every real test is skipped: `the tests of the real SAS programs only run when asked for` | `npx playwright test tests/real/...` was run directly | use `npm run test:conformance`, `npm run test:real-samples` or `npm run test:real-smoke`, or set `$env:SAS_REAL_TESTS = "true"` first |
+| every real test is skipped: `the tests of the real SAS programs only run when asked for` | `npx playwright test tests/real/...` (or `--project=bdd-real`) was run directly | use `npm run test:conformance`, `npm run test:real-samples` or `npm run test:real-smoke`, or set `$env:SAS_REAL_TESTS = "true"` first |
 | `REFUSED by safety policy rule "unknown-environment"` | declare the environment in `env/sas-environments.json` |
 | `REFUSED by safety policy rule "outside-namespace"` | name what the test creates or runs with `run.ns(...)` (`AUTO_<runId>_...`), or deliberately set `SAS_ALLOW_OUTSIDE_NAMESPACE=true` with a written `SAS_ALLOW_OUTSIDE_NAMESPACE_REASON` (it goes to the audit log) |
 | `REFUSED by safety policy rule "prod-read-only"` | run it against a nonprod environment; nothing allows a change in production |

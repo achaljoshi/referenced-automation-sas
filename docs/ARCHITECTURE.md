@@ -44,7 +44,7 @@ flowchart TB
 | Four mechanisms, each an `Adapter` (health, typed errors, logging, timeouts) | HTTPS: not used here (Viya is out of scope). Child process: `src/process`. PowerShell bridge speaking JSON lines: `src/desktop` + `bridge/sas-desktop-bridge.ps1`. Browser: not used here |
 | API first, GUI last | The order of preference in the [README](../README.md#the-order-of-preference): command line, COM, screens |
 | A policy gate in front of every privileged action | `src/core/safetyPolicy.ts`; plugged into the desktop layer by `src/fixtures/guardAdapter.ts` |
-| Capability-based design: a missing capability skips with a reason | Tags; the `desktopGate` fixture of `desktopTest` (`src/fixtures/index.ts`; `sasTest` has none, so the command line runs on every system); the opt-in of `tests/real` (`tests/support/realOptIn.ts`); `scripts/min-executed.js` counts the skips |
+| Capability-based design: a missing capability skips with a reason | Tags; the `desktopGate` fixture of `desktopTest` (`src/fixtures/index.ts`; `sasTest` has none, so the command line runs on every system); the opt-in of `tests/real` and `features/real` (`tests/support/realOptIn.ts`, applied to every real scenario by `features/real/steps/fixtures.ts`); `scripts/min-executed.js` counts the skips |
 | `SasCodeRunner` | Not built yet (ADR build order step 4; waits for the installation inventory) |
 
 | ADR 0001 property | Where |
@@ -59,7 +59,7 @@ flowchart TB
 | Pre-flight health gate | `src/core/health.ts`; `src/fixtures/preflight.ts` (once per worker) |
 | Isolation and clean-up | `src/core/cleanup.ts`; `src/fixtures/cleanup.ts` (after the test, pass or fail) |
 | One desktop = one worker | `src/fixtures/parallelism.ts`; `playwright.config.ts`; the `desktopHost` fixture |
-| Honest verification | Stand-ins (`src/desktop/fakeDesktop.ts`, `fakeApps.ts`, `standInBridge.ts`); NOT VERIFIED labels; `tests/real/` for a real machine |
+| Honest verification | Stand-ins (`src/desktop/fakeDesktop.ts`, `fakeApps.ts`, `standInBridge.ts`); NOT VERIFIED labels; `tests/real/` and `features/real/` for a real machine |
 
 ## How a test reaches SAS
 

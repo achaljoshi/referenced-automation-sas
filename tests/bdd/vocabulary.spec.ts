@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { CucumberExpression, ParameterTypeRegistry } from '@cucumber/cucumber-expressions';
 import { expect, test } from '@playwright/test';
-import { recordDataSteps, recordSteps } from './stepRig';
+import { recordDataSteps, recordProjectSteps, recordSteps } from './stepRig';
 
 // The step TEXTS are a public contract: features in other repositories are written against them. Changing, renaming or removing one
 // must be a deliberate act (a major version and a CHANGELOG line) - which is what this list makes visible.
@@ -65,6 +65,9 @@ const sample = (pattern: string): string => pattern.replace(/\{string\}/g, '"x"'
 
 const ours = recordSteps();
 const data = recordDataSteps();
+/** This repository's own steps (features/support), which every folder of features/ may use next to the vocabulary; `real` only features/real. */
+const project = recordProjectSteps();
+const projectAll = [...project.shared, ...project.real];
 
 test.describe('the vocabulary is a public contract', () => {
   test('exactly these steps exist: a change here is a breaking change for every feature that uses it', () => {
@@ -76,8 +79,8 @@ test.describe('the vocabulary is a public contract', () => {
     expect(texts.filter((t, i) => texts.indexOf(t) !== i)).toEqual([]);
   });
 
-  test('no step is ambiguous with another one of ours or with the data steps registered beside them', () => {
-    const all = [...ours, ...data].filter((s) => !s.pattern.startsWith('/'));
+  test('no step is ambiguous with another one of ours, with the data steps or with this repository\'s own steps registered beside them', () => {
+    const all = [...ours, ...data, ...projectAll].filter((s) => !s.pattern.startsWith('/'));
     for (const step of all) {
       const text = sample(step.pattern);
       const hits = all.filter((other) => matches(other.pattern, text)).map((other) => other.pattern);
@@ -85,11 +88,11 @@ test.describe('the vocabulary is a public contract', () => {
     }
   });
 
-  test('every step of every sample feature matches exactly one registered step (what bddgen would report as missing or ambiguous)', () => {
-    const all = [...ours, ...data];
+  test('every step of every feature - the sample features, the worked examples, production, real - matches exactly one registered step (what bddgen would report as missing or ambiguous)', () => {
+    const all = [...ours, ...data, ...projectAll];
     const dir = path.resolve(__dirname, '..', '..', 'features');
-    const features = fs.readdirSync(dir).filter((f) => f.endsWith('.feature'));
-    expect(features.length).toBeGreaterThanOrEqual(4);
+    const features = fs.readdirSync(dir, { recursive: true, encoding: 'utf8' }).filter((f) => f.endsWith('.feature'));
+    expect(features.length).toBeGreaterThanOrEqual(12);
     let checked = 0;
     for (const file of features) {
       for (const line of fs.readFileSync(path.join(dir, file), 'utf8').split('\n')) {
@@ -101,7 +104,23 @@ test.describe('the vocabulary is a public contract', () => {
         checked++;
       }
     }
-    expect(checked).toBeGreaterThan(25); // a scan that found nothing would pass everything
+    expect(checked).toBeGreaterThan(100); // a scan that found nothing would pass everything
+  });
+
+  test('this repository\'s own steps are registered once each, never repeat a step of the vocabulary, and ask only for fixtures the test provides', () => {
+    const ownTexts = projectAll.map((s) => s.pattern);
+    expect(ownTexts.filter((t, i) => ownTexts.indexOf(t) !== i)).toEqual([]);
+    const vocabulary = new Set(ours.map((s) => s.pattern));
+    expect(ownTexts.filter((t) => vocabulary.has(t))).toEqual([]);
+    const provided = new Set(['smc', 'smcLoggedOn', 'eg', 'egLoggedOn', 'egCom', 'desktopScenario', 'logon', 'desktopSettings', 'runContext', 'vars', 'world', 'environment', 'safetyPolicy', 'fakeDesktop', 'cleanup', 'sasProcess', '$testInfo']);
+    for (const step of projectAll) {
+      const header = /^(?:async\s*)?(?:function\s*)?\(?\s*\{([^}]*)\}/.exec(step.implementation.toString());
+      const names = (header?.[1] ?? '').split(',').map((n) => n.trim().split(':')[0]?.trim() ?? '').filter(Boolean);
+      for (const name of names) expect(provided.has(name), `${step.pattern} asks for the fixture "${name}"`).toBe(true);
+      expect(step.pattern, step.pattern).not.toMatch(/\bwait\b|\bsleep\b|\bseconds?\b/i);
+      expect(step.implementation.toString(), step.pattern).not.toMatch(/setTimeout|waitForTimeout/);
+    }
+    expect(projectAll.length).toBeGreaterThan(30);
   });
 
   test('every step asks only for fixtures that desktopTest provides', () => {

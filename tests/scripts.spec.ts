@@ -64,30 +64,34 @@ test.describe('scripts/try-simulator.js', () => {
   test('prints what each worked example does BEFORE it runs, with the settings it explains', () => {
     const r = run('try-simulator.js', ['--list']); // Playwright's --list: shows the tests without running them
     expect(r.status).toBe(0);
-    for (const needle of ['01_management_console.spec.ts', '02_enterprise_guide_com.spec.ts', '03_enterprise_guide_screens.spec.ts', '04_safety_policy.spec.ts', 'EXAMPLE 2 - SAS Enterprise Guide by COM', 'settings it explains:', 'SAS_EG_PROGID', 'SAS_DESKTOP_SIMULATOR'])
+    for (const needle of ['example_01_management_console.feature', 'example_02_enterprise_guide_com.feature', 'example_03_enterprise_guide_screens.feature', 'example_04_safety_policy.feature', 'EXAMPLE 2 - SAS Enterprise Guide by COM', 'settings it explains:', 'SAS_EG_PROGID', 'SAS_DESKTOP_SIMULATOR'])
       expect(r.out, needle).toContain(needle);
     expect(r.out.indexOf('EXAMPLE 1')).toBeLessThan(r.out.indexOf('Listing tests'));
     expect(r.out).not.toMatch(/\d+ passed/);
   });
 
-  test('a bare word filters inside the examples folder instead of running them all (Playwright ORs its file arguments)', () => {
+  test('a bare word filters the examples by file name instead of running more than them (Playwright ORs its file arguments)', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- a plain CommonJS script, loaded at run time
     const { testTargets, describeExamples } = require(path.join(root, 'scripts', 'try-simulator.js')) as { testTargets(argv: string[]): string[]; describeExamples(dir: string): Array<{ name: string; title: string; settings: string[] }> };
-    expect(testTargets([])).toEqual(['tests/examples']);
-    expect(testTargets(['02_', '--workers=1'])).toEqual(['tests/examples/02_']);
-    expect(testTargets(['tests/examples/04_safety_policy.spec.ts'])).toEqual(['tests/examples/04_safety_policy.spec.ts']);
-    expect(describeExamples(path.join(root, 'tests', 'examples')).map((e) => e.name)).toHaveLength(4);
-    expect(describeExamples(path.join(root, 'tests', 'examples')).every((e) => e.title.startsWith('EXAMPLE ') && e.settings.length >= 3)).toBe(true);
+    expect(testTargets([])).toEqual([]); // the @example tag selects them all
+    expect(testTargets(['02_', '--workers=1'])).toEqual(['example_02_']);
+    expect(testTargets(['example_04_safety_policy'])).toEqual(['example_04_safety_policy']);
+    expect(describeExamples(path.join(root, 'features')).map((e) => e.name)).toHaveLength(4);
+    expect(describeExamples(path.join(root, 'features')).every((e) => e.title.startsWith('EXAMPLE ') && e.settings.length >= 3)).toBe(true);
   });
 });
 
 test.describe('playwright.config.ts', () => {
   const config = fs.readFileSync(path.join(root, 'playwright.config.ts'), 'utf8');
 
-  test('shares one run id with every worker, defines the bdd project and sets one worker where a real desktop is in reach', () => {
+  test('shares one run id with every worker, defines the bdd projects and sets one worker where a real desktop is in reach', () => {
     expect(config).toContain('initRunContext()');
     expect(config).toContain("name: 'bdd'");
+    expect(config).toContain("name: 'bdd-production'");
+    expect(config).toContain("name: 'bdd-real'");
     expect(config).toContain('features/*.feature');
+    expect(config).toContain('features/production/*.feature');
+    expect(config).toContain('features/real/*.feature');
     expect(config).toContain('desktopWorkerPlan');
     expect(config).toMatch(/workers: 1, fullyParallel: false/);
     expect(config).toContain('createPlaywrightConfig');

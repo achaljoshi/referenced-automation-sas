@@ -3,6 +3,8 @@ import { registerDataSteps } from '@automation/referenced-automation-ui';
 import { LogonGuard } from '../../src/core';
 import { SasEnterpriseGuide, SasEnterpriseGuideUi, SasManagementConsole, startFakeDesktop, FAKE_EG_PATH, FAKE_SMC_PATH, clearRejectedLogons, type FakeSasDesktopOptions } from '../../src/desktop';
 import { registerDesktopSteps, type DesktopStepFixtures } from '../../src/bdd';
+import { registerRealSteps } from '../../features/support/realSteps';
+import { registerSasSteps } from '../../features/support/sasSteps';
 import { CredentialSource, DesktopScenario, LogonHelper, registerSampleProject, sampleProgramName, sampleProjectPath } from '../../src/fixtures';
 import { reader, settingsFor, tempDir } from '../fixtures/support';
 
@@ -26,6 +28,17 @@ export function recordDataSteps(): RecordedStep[] {
   const make = (keyword: RecordedStep['keyword']) => (pattern: string | RegExp, implementation: RecordedStep['implementation']) => void steps.push({ keyword, pattern: String(pattern), implementation });
   registerDataSteps({ Given: make('Given'), Then: make('Then') });
   return steps;
+}
+
+/** This repository's own steps (features/support): the ones every folder of features/ shares, then the ones of features/real only. */
+export function recordProjectSteps(): { shared: RecordedStep[]; real: RecordedStep[] } {
+  const record = (register: (steps: Parameters<typeof registerSasSteps>[0]) => void): RecordedStep[] => {
+    const steps: RecordedStep[] = [];
+    const make = (keyword: RecordedStep['keyword']) => (pattern: string | RegExp, implementation: RecordedStep['implementation']) => void steps.push({ keyword, pattern: String(pattern), implementation });
+    register({ Given: make('Given'), When: make('When'), Then: make('Then') });
+    return steps;
+  };
+  return { shared: record(registerSasSteps), real: record(registerRealSteps) };
 }
 
 /**

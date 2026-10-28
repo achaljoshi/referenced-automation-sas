@@ -36,7 +36,7 @@ Set `SAS_DESKTOP_TRANSPORT=remote` and the remote desktop settings in section 7 
 
 ## Running the suite on a Windows machine that has SAS
 
-`npm test` and `npm run test:ci` run the suite against the **stand-in desktop**; they do not open Management Console or Enterprise Guide and do not type a login. The tests under `tests/real` - the only ones that would - are skipped with the reason unless you ask for them on purpose:
+`npm test` and `npm run test:ci` run the suite against the **stand-in desktop**; they do not open Management Console or Enterprise Guide and do not type a login. The tests under `tests/real` and the scenarios of `features/real` - the only ones that would - are skipped with the reason unless you ask for them on purpose:
 
 | To | Run |
 |---|---|
@@ -44,7 +44,7 @@ Set `SAS_DESKTOP_TRANSPORT=remote` and the remote desktop settings in section 7 
 | The real-program checks that need no login | `npm run test:conformance` |
 | Log on, look, leave (read-only; uses your login, once - a rejected logon is never retried) | `npm run test:real-smoke` |
 
-Both set `SAS_REAL_TESTS=true` for their own run through `scripts/run-real.js`, which works the same in PowerShell, cmd and sh. A new spec file under `tests/real` must ask for that opt-in or `tests/optInForRealTests.spec.ts` fails.
+Both set `SAS_REAL_TESTS=true` for their own run through `scripts/run-real.js`, which works the same in PowerShell, cmd and sh. A new spec file under `tests/real` must ask for that opt-in or `tests/optInForRealTests.spec.ts` fails; the scenarios of `features/real` get it from an automatic fixture of that folder's own test (`features/real/steps/fixtures.ts`), which the same spec checks. A scenario tagged `@sas-cli` there needs no desktop and runs on any system.
 
 How the Windows-only differences are tested without Windows:
 

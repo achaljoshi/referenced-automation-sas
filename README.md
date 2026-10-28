@@ -96,7 +96,7 @@ In PowerShell an environment variable is set with `$env:NAME = "value"` and remo
    npm run test:real-samples
    npm run test:real-smoke
    ```
-   Select one test by title with `-g` (forward slashes in test paths: a backslash gives `No tests found`): `npx playwright test -g "User Manager"` - add `$env:SAS_REAL_TESTS = "true"` first for a test under `tests/real`.
+   Select one test by title with `-g` (forward slashes in test paths: a backslash gives `No tests found`): `npx playwright test -g "User Manager"` - add `$env:SAS_REAL_TESTS = "true"` first for a test under `tests/real` or a scenario of `features/real` (generate those with `npx bddgen` and add `--project=bdd-real`).
 7. **Look at the report:** `npx playwright show-report` opens `playwright-report/index.html`. A failed test has a screenshot, the step journal (`desktop-steps`) and a message that says what is on the screen when a control is missing.
 
 **Java Access Bridge for Management Console.** Management Console is a Java Swing program: Windows UI Automation sees its controls **only when the Java Access Bridge is enabled**. Find `jabswitch.exe` in the `bin` folder of the Java the console uses (typically below `SASHome\SASPrivateJavaRuntimeEnvironment\9.4\jre\bin`; `npm run doctor` prints what it found), run `jabswitch -enable` in a command prompt, then **close and restart the console**. The symptom of a disabled bridge is a console window with no controls for the tests (`doctor`: "a Java window whose UI Automation tree is empty").
@@ -114,8 +114,8 @@ The exact messages people saw (more in [`docs/DESKTOP_SAS.md`](docs/DESKTOP_SAS.
 | `'tsc' is not recognized as an internal or external command` (and there is no `node_modules` folder) | the install did not run or failed | `.\scripts\setup.bat` (`.\scripts\setup.bat --local` without a registry), read its first error |
 | `Cannot find module '...\dist\desktop\cli\inspect.js'` | the project was not built | `npm run build` first |
 | `Illegal characters in path` for `*.tgz` (from `npm run clean`, `create-package`) | an old clean script passed the pattern `*.tgz` to the OS; fixed (`rimraf --glob`) | update to the current version of the repo |
-| `No tests found` | a Windows path with backslashes after `playwright test` | `npx playwright test tests/real/smoke.spec.ts` (forward slashes) or `-g "<part of the title>"` |
-| every real test is skipped: `the tests of the real SAS programs only run when asked for` | `npx playwright test tests/real/...` run directly | use `npm run test:conformance`, `npm run test:real-samples` or `npm run test:real-smoke`, or set `$env:SAS_REAL_TESTS = "true"` first |
+| `No tests found` | a Windows path with backslashes after `playwright test` | `npx playwright test tests/real/conformance.spec.ts` (forward slashes) or `-g "<part of the title>"` |
+| every real test is skipped: `the tests of the real SAS programs only run when asked for` | `npx playwright test tests/real/...` (or `--project=bdd-real`) run directly | use `npm run test:conformance`, `npm run test:real-samples` or `npm run test:real-smoke`, or set `$env:SAS_REAL_TESTS = "true"` first |
 | `error TS5108: Option 'moduleResolution=node10' has been removed` in `tsconfig.json` | TypeScript 7 removed `moduleResolution: "node"` (nothing to do with the Node.js version) | `tsconfig.json` uses `"module": "node16"` and `"moduleResolution": "node16"` (same compiled output): update the repo, or change those two lines by hand |
 | `The SAS desktop programs run on Windows: this test was skipped, not run` | started on macOS or Linux without the stand-in | use a Windows machine, `SAS_DESKTOP_TRANSPORT=remote`, or `SAS_DESKTOP_SIMULATOR=true` |
 | `N of M pre-flight check(s) are red; no test was started.` | the gate found a problem before the first test | read the table and the "what to do" line of each red check; `SAS_PREFLIGHT=false` only to see one test fail on its own |
@@ -135,13 +135,15 @@ The exact messages people saw (more in [`docs/DESKTOP_SAS.md`](docs/DESKTOP_SAS.
 
 ## Sample tests for a machine with SAS
 
-Three small, **read-only** specs in [`tests/real/`](tests/real) to run on the machine where SAS is installed: nothing is created, changed or run on SAS. They are written to be copied and changed.
+Three small, **read-only** Gherkin features in [`features/real/`](features/real) to run on the machine where SAS is installed: nothing is created, changed or run on SAS. They are written to be copied and changed.
 
 | Sample | File | Route | What it does |
 |---|---|---|---|
-| **1. Command line** | [`sample_01_command_line.spec.ts`](tests/real/sample_01_command_line.spec.ts) | `sasProcess` (any OS) | Checks the tool folders, runs one command you name and checks its exit code and output, reads the audit record it left, and shows a change outside the run's own objects being refused before anything starts |
-| **2. Management Console** | [`sample_02_management_console.spec.ts`](tests/real/sample_02_management_console.spec.ts) | Screens | Logs on through the logon guard, sees the navigation tree, opens the **User Manager**, reads the users |
-| **3. Enterprise Guide** | [`sample_03_enterprise_guide.spec.ts`](tests/real/sample_03_enterprise_guide.spec.ts) | COM, then screens | Reads the object model's version, opens a project you name and lists its process flows and programs (without running or saving it), connects the screens |
+| **1. Command line** | [`sample_01_command_line.feature`](features/real/sample_01_command_line.feature) | `sasProcess` (any OS) | Checks the tool folders, runs one command you name and checks its exit code and output, reads the audit record it left, and shows a change outside the run's own objects being refused before anything starts |
+| **2. Management Console** | [`sample_02_management_console.feature`](features/real/sample_02_management_console.feature) | Screens | Logs on through the logon guard, sees the navigation tree, opens the **User Manager**, reads the users |
+| **3. Enterprise Guide** | [`sample_03_enterprise_guide.feature`](features/real/sample_03_enterprise_guide.feature) | COM, then screens | Reads the object model's version, opens a project you name and lists its process flows and programs (without running or saving it), connects the screens |
+
+The scenarios are the `bdd-real` project (`playwright.config.ts`): the real programs, or the stand-in with `SAS_DESKTOP_SIMULATOR=true`. Every one is skipped, with the reason, unless the run asked for it - an automatic fixture in `features/real/steps/fixtures.ts` applies the rule of `tests/support/realOptIn.ts` to every scenario of that folder - and a scenario tagged `@sas-cli` needs no desktop, so sample 1 runs on Windows, macOS and Linux.
 
 **Run them** - in this order, each step only when the one before is green:
 
@@ -172,7 +174,7 @@ What the output means:
 - **A logon is rejected** - it is typed **once**, then refused for `SAS_LOGON_FAILURE_COOLDOWN_MIN` minutes. Fix the credentials; do not re-run.
 - **The tool's option names, exit codes and output are NOT VERIFIED** against any SAS release: `SAS_SAMPLE_TOOL` is whatever you point it at, and the test only says it ran and printed what you expected.
 
-Not done by the samples, on purpose: running a project or a program (an update: it needs a nonprod environment and an object inside the run's namespace, see [Safety rules](#safety-rules) and `tests/examples/02_enterprise_guide_com.spec.ts`) and creating anything.
+Not done by the samples, on purpose: running a project or a program (an update: it needs a nonprod environment and an object inside the run's namespace, see [Safety rules](#safety-rules) and `features/example_02_enterprise_guide_com.feature`) and creating anything.
 
 ## Using it from the command line
 
@@ -252,7 +254,7 @@ test('run a project by COM and read its log @sas-desktop @eg-com', async ({ egCo
 });
 ```
 
-`desktopTest` is `sasTest` plus the desktop fixtures below, so `sasProcess` and the policy are there too. [`examples/README.md`](examples/README.md) explains the four worked examples (`tests/examples/`, on the stand-in), each line with the `.env` setting it uses; the read-only [sample tests](#sample-tests-for-a-machine-with-sas) are the same flows for a real machine.
+`desktopTest` is `sasTest` plus the desktop fixtures below, so `sasProcess` and the policy are there too. [`examples/README.md`](examples/README.md) explains the four worked examples (`features/example_*.feature`, on the stand-in), each line with the `.env` setting it uses; the read-only [sample tests](#sample-tests-for-a-machine-with-sas) are the same flows for a real machine.
 
 ### Fixtures
 
@@ -297,14 +299,24 @@ test('run a project by COM and read its log @sas-desktop @eg-com', async ({ egCo
 | `src/recorder` | The GUI recorder and the converters to Playwright tests ([`docs/RECORD_AND_PLAY.md`](docs/RECORD_AND_PLAY.md)) | Domain: record and play |
 | `src/fixtures` | `sasTest` (command line), `desktopTest` and `desktopExpect` (desktop): the worker session, the pre-flight gate, the policy adapter, the app, logon, clean-up and evidence fixtures | Test layer |
 | `src/bdd` | `registerDesktopSteps`: the Gherkin vocabulary | Test layer |
-| `features/` | Sample features and the steps file for playwright-bdd | Test layer |
-| `tests/` | The repo's own tests (`tests/examples` = the worked examples on the stand-in, `tests/real` = checks and samples for a real machine) | |
+| `features/` | Gherkin features and their steps for playwright-bdd: the sample features, the four worked examples, `production/` (a production environment), `real/` (a machine with SAS; opt-in), `steps/` and `support/` (the steps of this repo) | Test layer |
+| `tests/` | The repo's own plain specs: tests of the framework itself (`tests/real` = the conformance check for a real machine); the behaviours are the scenarios in `features/` | |
 | `bridge/` | `sas-desktop-bridge.ps1` and its pinned SHA-256 | |
 | `env/` | `sas-environments.json` (declared environments) and its example | |
 
 ## Gherkin / BDD (`playwright-bdd` 9.2.1)
 
-`features/*.feature` and `features/steps/` are generated into tests by `bddgen` (the npm scripts run it first) and run as the `bdd` project against the stand-in desktop. The step vocabulary lives in the package (`registerDesktopSteps`); its texts are a public contract (`tests/bdd/vocabulary.spec.ts`).
+`features/` is generated into tests by `bddgen` (the npm scripts run it first). Each folder is its own Playwright project, because the worker options that make a scenario what it is cannot change inside one:
+
+| Project | Features | Runs against |
+|---|---|---|
+| `bdd` | `features/*.feature` (the sample features and the four worked examples `example_*.feature`) with the steps in `features/steps/` | the stand-in desktop |
+| `bdd-production` | `features/production/` | the stand-in declared as a **production** environment: read-only by construction |
+| `bdd-real` | `features/real/` | the real programs, or the stand-in with `SAS_DESKTOP_SIMULATOR=true`; opt-in (`SAS_REAL_TESTS`, set by `scripts/run-real.js`) |
+
+The step vocabulary lives in the package (`registerDesktopSteps`); its texts are a public contract (`tests/bdd/vocabulary.spec.ts`). This repo's own steps - the ones that say "spelled exactly like that", what the safety policy did, the audit log, the real-machine samples - are in `features/support/`, shared by every folder.
+
+**Where the behaviours are tested.** What a person would recognise as the product - logon through the lockout guard, the Management Console's User Manager, opening and running an Enterprise Guide project by COM or by screens, the safety policy refusing a change outside the run's namespace or anything in production, a command run through the process driver, the read-only samples and smoke checks for a real machine - is a **scenario** in `features/`. The `tests/` folder keeps **plain specs** for what is not a behaviour but the framework itself, and says so by being plain: unit tests of the library (the policy, audit, secrets, run context, credentials, the logon guard and `LogonHelper`, the process driver and batch tool runner, the protocol, transports, bridge, wrappers and locators, the recorder and its converters), the documentation, environment and Windows-drift guards (`envDocs`, `portability`, `scripts`, `optInForRealTests`, the bridge hash), the tests of the fixtures themselves (`tests/fixtures`, including the wrong-password run through the `smcLoggedOn` fixture, and `sasTest`), the tests of the Gherkin vocabulary (`tests/bdd`), the generated specs in `tests/desktop-generated` (golden output of the recorder's converter, which produces plain Playwright specs) and the conformance check of the bridge (`tests/real/conformance.spec.ts`).
 
 ```gherkin
 @sas-desktop @smc-ui @smoke
@@ -438,7 +450,7 @@ Settings are looked up in this order (the first one found wins): a real environm
 | `SAS_SAMPLE_TOOL_EXIT` | SAMPLE 1: the exit code that means success. | 0 | No | no |
 | `SAS_SAMPLE_SMC_USER` | SAMPLE 2: a user the User Manager must list. | (list must be non-empty) | No | no |
 | `SAS_SAMPLE_EG_PROJECT` | SAMPLE 3: the full path of an existing `.egp` to open and list (read-only). | (the test is skipped) | No | no |
-| `SAS_REAL_TESTS` | Run the tests of the real SAS programs (`tests/real`); set by `npm run test:conformance` / `test:real-smoke`, not by hand. Without it a plain `npm test` never opens the real programs. | false | No | no |
+| `SAS_REAL_TESTS` | Run the tests of the real SAS programs (`tests/real`, `features/real`); set by `npm run test:conformance` / `test:real-samples` / `test:real-smoke`, not by hand. Without it a plain `npm test` never opens the real programs. | false | No | no |
 | `SAS_TEST_NODE_LAUNCH` | Tests of this repo only: start the fake command-line tool through `node` (what Windows needs; `1` takes that route on any system). | (unset) | No | no |
 | `MIN_EXECUTED` | The least number of tests that must have run (`scripts/min-executed.js`). | 1 | No | no |
 | `NPM_REGISTRY_URL` | The npm registry the setup scripts use. | (npm's own) | No | no |
@@ -521,20 +533,20 @@ Same as the other repos in this family: VS Code prompts for recommended extensio
 
 | Command | What it runs |
 |---|---|
-| `npm test` | Everything on the stand-in (`bddgen`, then Playwright). The tests of the real programs (`tests/real`) are skipped with the reason on every system, Windows included: they run only when asked for (below) |
-| `npm run test:bdd` | The Gherkin features only (parallel workers; ends with the minimum-executed gate) |
+| `npm test` | Everything on the stand-in (`bddgen`, then Playwright). The tests of the real programs (`tests/real`, `features/real`) are skipped with the reason on every system, Windows included: they run only when asked for (below) |
+| `npm run test:bdd` | The Gherkin features only, in the three `bdd` projects (parallel workers; ends with the minimum-executed gate) |
 | `npm run test:smoke` / `npm run test:regression` | The `@smoke` / `@regression` tagged tests |
 | `npm run test:ci` | What the pipeline runs: everything, then `scripts/min-executed.js`: the run **fails when fewer tests executed than expected** and prints how many were skipped and why |
 | `npm run test:conformance` | **Real machine, on purpose:** the checks that need no login (`tests/real/conformance.spec.ts`); sets `SAS_REAL_TESTS=true` |
-| `npm run test:real-samples` | **Real machine, on purpose:** the three read-only [samples](#sample-tests-for-a-machine-with-sas) (`tests/real/sample_*.spec.ts`); sets `SAS_REAL_TESTS=true` |
-| `npm run test:real-smoke` | **Real machine, on purpose:** log on, look, leave (`tests/real/smoke.spec.ts`; read-only); sets `SAS_REAL_TESTS=true` |
-| `npm run try:simulator` | The worked examples on the stand-in |
+| `npm run test:real-samples` | **Real machine, on purpose:** the three read-only [samples](#sample-tests-for-a-machine-with-sas) (`features/real/sample_*.feature`; the launcher generates them first); sets `SAS_REAL_TESTS=true` |
+| `npm run test:real-smoke` | **Real machine, on purpose:** log on, look, leave (`features/real/smoke.feature`; read-only); sets `SAS_REAL_TESTS=true` |
+| `npm run try:simulator` | The worked examples (`features/example_*.feature`) on the stand-in |
 | `npm run doctor`, `npm run inspect -- --app smc`, `npm run inspect:windows`, `npm run bridge:path` | Check the machine; print what a program looks like to the automation; list the open windows; print where the bridge script is and the SHA-256 it must have |
 | `npm run lint`, `npm run typecheck`, `npm run security` | The gates |
 
 `SAS_DESKTOP_SIMULATOR=true npm run test:conformance` (likewise `test:real-samples`, `test:real-smoke`) runs the real-machine checks against the stand-in, to show that the checks themselves work (PowerShell: set `$env:SAS_DESKTOP_SIMULATOR = "true"` first).
 
-`tests/envDocs.spec.ts` keeps [`.env.example`](.env.example), the [Configuration reference](#configuration-reference) table and [`.env.local.example`](.env.local.example) in step with the code; `tests/portability.spec.ts` enforces the portability rules of [`docs/PLATFORMS.md`](docs/PLATFORMS.md) on `src/`; `tests/fixtures/sasTest.spec.ts` tests the command-line fixtures; `tests/real/` is opt-in (`tests/optInForRealTests.spec.ts` keeps it so).
+`tests/envDocs.spec.ts` keeps [`.env.example`](.env.example), the [Configuration reference](#configuration-reference) table and [`.env.local.example`](.env.local.example) in step with the code; `tests/portability.spec.ts` enforces the portability rules of [`docs/PLATFORMS.md`](docs/PLATFORMS.md) on `src/`; `tests/fixtures/sasTest.spec.ts` tests the command-line fixtures; `tests/real/` and `features/real/` are opt-in (`tests/optInForRealTests.spec.ts` keeps them so).
 
 ## What has and has not been verified
 

@@ -11,12 +11,26 @@ import { desktopWorkerPlan } from './src/fixtures/parallelism';
 // SAS_RUN_ID so every Playwright worker of this run shares it. An id already in SAS_RUN_ID (a CI pipeline number) is kept.
 initRunContext();
 
-// Gherkin features: `bddgen` turns features/*.feature + features/steps/*.ts into runnable tests in .features-gen/ (the npm scripts run
-// it first). They are their own project, so `--project=bdd` runs only them. They run against the built-in stand-in desktop.
+// Gherkin features: `bddgen` turns the features and their step definitions into runnable tests in .features-gen/ (the npm scripts run
+// it first). Each folder is its own project, because the worker options that make a scenario what it is cannot change inside one:
+//   bdd             features/*.feature          the built-in stand-in desktop (the sample features and the four worked examples)
+//   bdd-production  features/production         the stand-in declared as a PRODUCTION environment: read-only by construction
+//   bdd-real        features/real               the REAL programs, or the stand-in with SAS_DESKTOP_SIMULATOR=true; opt-in (SAS_REAL_TESTS)
+// `--project=bdd` runs only the first. They share the step vocabulary: src/bdd (shipped) and features/support (this repository's own).
 const bddTestDir = defineBddConfig({
   features: 'features/*.feature',
   steps: 'features/steps/*.ts',
-  outputDir: '.features-gen',
+  outputDir: '.features-gen/bdd',
+});
+const bddProductionTestDir = defineBddConfig({
+  features: 'features/production/*.feature',
+  steps: 'features/production/steps/*.ts',
+  outputDir: '.features-gen/production',
+});
+const bddRealTestDir = defineBddConfig({
+  features: 'features/real/*.feature',
+  steps: 'features/real/steps/*.ts',
+  outputDir: '.features-gen/real',
 });
 
 // ---- Parallelism: the SAS programs are driven through ONE desktop ----
@@ -33,5 +47,9 @@ export default createPlaywrightConfig({
   name: '@automation/referenced-automation-sas',
   testTimeoutMs: 60_000,
   overrides: plan.oneWorker ? { workers: 1, fullyParallel: false } : {},
-  extraProjects: [{ name: 'bdd', testDir: bddTestDir }],
+  extraProjects: [
+    { name: 'bdd', testDir: bddTestDir },
+    { name: 'bdd-production', testDir: bddProductionTestDir },
+    { name: 'bdd-real', testDir: bddRealTestDir },
+  ],
 });

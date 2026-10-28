@@ -27,6 +27,25 @@ test.describe('the tests of the real SAS programs are opt-in', () => {
     }
   });
 
+  test('every scenario of features/real asks the opt-in first: the guard is an automatic fixture of that folder\'s own test, and nothing else runs those features', () => {
+    const root = path.join(__dirname, '..');
+    const fixtures = fs.readFileSync(path.join(root, 'features', 'real', 'steps', 'fixtures.ts'), 'utf8');
+    // realTestsSkipReason decides, an AUTOMATIC fixture applies it to every scenario, and the desktop gate waits for it (so the opt-in is the reason shown)
+    expect(fixtures).toMatch(/realOptIn: \[[\s\S]*realTestsSkipReason\([^)]*\)[\s\S]*testInfo\.skip\(skipReason !== undefined[\s\S]*\{ auto: true \}/);
+    expect(fixtures).toMatch(/desktopGate: \[\s*async \(\{ realOptIn,/);
+    const steps = fs.readFileSync(path.join(root, 'features', 'real', 'steps', 'steps.ts'), 'utf8');
+    expect(steps, 'the steps of features/real are registered on that folder\'s own test').toContain("from './fixtures'");
+    // the feature files of the real folder are generated into the project that uses that test, and into no other
+    const config = fs.readFileSync(path.join(root, 'playwright.config.ts'), 'utf8');
+    expect(config).toMatch(/features: 'features\/real\/\*\.feature',\s*steps: 'features\/real\/steps\/\*\.ts'/);
+    // and no feature of another folder carries a real-program tag, which would run it without the guard
+    for (const folder of ['features', path.join('features', 'production')])
+      for (const file of fs.readdirSync(path.join(root, folder)).filter((f) => f.endsWith('.feature')))
+        expect(fs.readFileSync(path.join(root, folder, file), 'utf8'), `${folder}/${file} must not carry a @real-* tag`).not.toMatch(/^\s*@.*@real-/m);
+    const real = fs.readdirSync(path.join(root, 'features', 'real')).filter((f) => f.endsWith('.feature'));
+    expect(real.length).toBeGreaterThan(0);
+  });
+
   test('the npm scripts that run them go through the launcher that sets SAS_REAL_TESTS, the same way on every shell', () => {
     const scripts = (JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts;
     expect(scripts['test:conformance']).toBe('node scripts/run-real.js @real-conformance');

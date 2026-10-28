@@ -470,10 +470,11 @@ test.describe('docs/SECURITY.md and docs/DESKTOP_SAS.md', () => {
 });
 
 test.describe('the worked examples', () => {
-  const files = walk('tests/examples', (f) => /^\d+_.*\.spec\.ts$/.test(path.basename(f)));
+  // The four examples are Gherkin features (features/example_*.feature): the header comment above the tags explains every setting.
+  const files = walk('features', (f) => /^example_\d+_.*\.feature$/.test(path.basename(f)));
 
   test('there is one per program, and the examples README explains each', () => {
-    expect(files.map((f) => path.basename(f))).toEqual(['01_management_console.spec.ts', '02_enterprise_guide_com.spec.ts', '03_enterprise_guide_screens.spec.ts', '04_safety_policy.spec.ts']);
+    expect(files.map((f) => path.basename(f))).toEqual(['example_01_management_console.feature', 'example_02_enterprise_guide_com.feature', 'example_03_enterprise_guide_screens.feature', 'example_04_safety_policy.feature']);
     const guide = read('examples/README.md');
     for (const file of files) expect(guide, file).toContain(path.basename(file));
     for (const needle of ['npm run try:simulator', 'stand-in', 'SAS_ALLOW_OUTSIDE_NAMESPACE', 'NOT VERIFIED', '.env.example']) expect(guide, needle).toContain(needle);
@@ -482,27 +483,20 @@ test.describe('the worked examples', () => {
   test('each example runs on the stand-in, is tagged, and names the settings it relies on in its header (every one documented)', () => {
     for (const file of files) {
       const text = read(file);
-      const header = text.slice(0, text.indexOf('*/'));
+      const header = text.slice(0, text.search(/^@/m));
       expect(header, `${file}: how to run it`).toContain('npm run try:simulator');
-      expect(text, `${file}: tagged`).toMatch(/@sas-desktop/);
-      expect(text, `${file}: imports the shared test`).toContain("./support/exampleTest");
+      expect(text, `${file}: tagged`).toMatch(/^@sas-desktop .*@example/m);
+      expect(file, `${file} is in the folder of the stand-in project, not of the production or real ones`).toMatch(/^features[\\/][^\\/]+$/);
       const named = [...new Set([...header.matchAll(/\b(SAS_[A-Z0-9_]+)\b/g)].map((m) => m[1] as string))];
       expect(named.length, `${file}: names its settings`).toBeGreaterThanOrEqual(3);
       for (const name of named) expect(exampleNames.includes(name) || ['SAS_SMC_USER', 'SAS_SMC_PASSWORD', 'SAS_EG_USER', 'SAS_EG_PASSWORD'].includes(name), `${file} names ${name}, not documented in .env.example`).toBe(true);
     }
   });
 
-  test('every setting an example reads is explained in its header', () => {
-    for (const file of files) {
-      const text = read(file);
-      for (const name of namesRead(text)) expect(text.match(new RegExp(`\\b${name}\\b`, 'g'))?.length, `${file}: ${name} is read but not explained in the comments`).toBeGreaterThan(1);
-    }
-  });
-
-  test('the shared example test forces the stand-in and says how to run against the real programs', () => {
-    const support = read('tests/examples/support/exampleTest.ts');
+  test('the features\' shared test forces the stand-in and says how to run against the real programs', () => {
+    const support = read('features/steps/fixtures.ts');
     expect(support).toContain('desktopSimulator');
-    expect(support).toContain('REAL programs');
+    expect(support).toContain('real programs');
     expect(support).toMatch(/await use\(true\)/);
   });
 });

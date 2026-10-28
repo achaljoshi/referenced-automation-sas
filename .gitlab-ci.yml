@@ -125,12 +125,12 @@ test:
   needs: ["build"]
   script:
     - npm ci
-    # The checks meant for a REAL machine (tests/real) run here against the stand-in desktop, so they cannot rot unnoticed. Without
+    # The checks meant for a REAL machine (tests/real, features/real) run here against the stand-in desktop, so they cannot rot unnoticed. Without
     # SAS_DESKTOP_SIMULATOR they are skipped on this image. They run BEFORE the main run because every Playwright run empties
     # test-results: the artifacts below must come from the main run.
     - SAS_DESKTOP_SIMULATOR=true npm run test:conformance
     - SAS_DESKTOP_SIMULATOR=true npm run test:real-smoke
-    # The three sample tests (tests/real/sample_*.spec.ts) the same way. `node --version` stands in for "a command that only prints something".
+    # The three samples (features/real/sample_*.feature; run-real.js generates the Gherkin first) the same way. `node --version` stands in for "a command that only prints something".
     - SAS_DESKTOP_SIMULATOR=true SAS_SAMPLE_TOOL="$(command -v node)" SAS_SAMPLE_TOOL_ARGS=--version SAS_SAMPLE_TOOL_EXPECT='^v[0-9]+\.' npm run test:real-samples
     # `bddgen` first (the Gherkin features only exist as tests after it), then every test on the stand-in desktop (the examples, the
     # sample features, the fixtures, the policy), then scripts/min-executed.js: the job FAILS when fewer tests executed than expected
@@ -184,7 +184,7 @@ sas-desktop-conformance:
       - logs/
     expire_in: 30 days
 
-# The read-only smoke tests of the real programs (tests/real/smoke.spec.ts): log on, look, leave. They need the logins as masked
+# The read-only smoke scenarios of the real programs (features/real/smoke.feature): log on, look, leave. They need the logins as masked
 # CI variables. A rejected logon is typed once and then refused by the logon guard (the marker is .sas-state/logon-failed.json:
 # cache that folder between pipelines if re-runs should be stopped too), so a wrong password cannot lock the account by retrying.
 sas-desktop-smoke:
@@ -208,7 +208,7 @@ sas-desktop-smoke:
       - logs/
     expire_in: 30 days
 
-# The three read-only sample tests (tests/real/sample_*.spec.ts: command line, Management Console, Enterprise Guide). Point them at your installation
+# The three read-only samples (features/real/sample_*.feature: command line, Management Console, Enterprise Guide). Point them at your installation
 # with CI/CD variables (README, "Sample tests for a machine with SAS"): SAS_SAMPLE_TOOL (+ _ARGS, _EXPECT), SAS_SAMPLE_SMC_USER, SAS_SAMPLE_EG_PROJECT, and
 # the logins and program paths of sas-desktop-smoke. They change nothing on SAS. Run conformance first.
 sas-desktop-samples:
@@ -236,7 +236,7 @@ sas-desktop-samples:
 #
 # The `test` job above runs the whole suite on Linux. These two run it on the other systems the package supports (docs/PLATFORMS.md), so a
 # change that works on Linux but not on Windows is seen. NOT VERIFIED: replace the placeholder tags with your runners' tags first. They
-# run against the stand-in desktop: the tests of the real programs (tests/real) are opt-in, so these jobs never open SAS or type a login,
+# run against the stand-in desktop: the tests of the real programs (tests/real, features/real) are opt-in, so these jobs never open SAS or type a login,
 # even on a runner that has it installed (that is what the two manual jobs above are for).
 test-windows:
   stage: test
