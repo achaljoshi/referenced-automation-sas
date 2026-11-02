@@ -35,21 +35,23 @@ const UNTRUSTED_ROOT = new Set([
 const isCertificateCode = (code) => UNTRUSTED_ROOT.has(code) || /^(CERT_|ERR_TLS_CERT_)/.test(code ?? '');
 
 function registryUrl() {
-  const answer = spawnSync('npm', ['config', 'get', 'registry'], { encoding: 'utf8', shell: process.platform === 'win32' });
+  // One fixed command string through the shell: `npm` is npm.cmd on Windows and cannot be started without one, and passing an
+  // argument array together with a shell is what Node's DEP0190 warning is about.
+  const answer = spawnSync('npm config get registry', { encoding: 'utf8', shell: true });
   const value = answer.status === 0 ? answer.stdout.trim() : '';
   return /^https:\/\//.test(value) ? value : DEFAULT_REGISTRY;
 }
 
-/** Resolves to { host, code } where code is undefined when the certificate was accepted (any HTTP answer counts). */
-function probe(url) {
+/** Resolves to { host, kind, code } (kind: 'registry' or 'browsers') where code is undefined when the certificate was accepted (any HTTP answer counts). */
+function probe(url, kind) {
   const { origin, host } = new URL(url);
   return new Promise((resolve) => {
     const request = https.request(origin, { method: 'HEAD', timeout: PROBE_TIMEOUT_MS, rejectUnauthorized: true }, (response) => {
       response.resume();
-      resolve({ host });
+      resolve({ host, kind });
     });
     request.on('timeout', () => request.destroy(Object.assign(new Error('timed out'), { code: 'ETIMEDOUT' })));
-    request.on('error', (error) => resolve({ host, code: error.code ?? 'UNKNOWN', message: error.message }));
+    request.on('error', (error) => resolve({ host, kind, code: error.code ?? 'UNKNOWN', message: error.message }));
     request.end();
   });
 }
@@ -76,6 +78,16 @@ function explain(failures, verificationOff) {
   } else {
     lines.push('That is a different certificate problem (expired, or issued for another name); a root certificate will not fix it. Ask whoever runs that host or proxy.');
   }
+  if (failures.some((f) => f.kind === 'browsers')) {
+    lines.push(
+      '',
+      'Only the download of Playwright\'s own browsers is blocked. If you are happy to use the Microsoft Edge or Google Chrome that is already installed, skip that download:',
+      '       PowerShell:     $env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"; $env:BROWSER = "msedge"     (or "chrome")',
+      '       cmd.exe:        set PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 && set BROWSER=msedge',
+      '       macOS / Linux:  export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 BROWSER=msedge',
+      '  then run setup again. To fetch the browsers from your own mirror instead, set PLAYWRIGHT_DOWNLOAD_HOST (see .env.example).',
+    );
+  }
   lines.push(
     verificationOff
       ? 'NODE_TLS_REJECT_UNAUTHORIZED=0 is set in this shell: certificate checking is OFF for every Node program here, npm included. Unset it once the certificate above is in place.'
@@ -85,10 +97,10 @@ function explain(failures, verificationOff) {
 }
 
 async function main() {
-  const targets = [registryUrl()];
-  if (process.argv.includes('--browsers')) targets.push(process.env.PLAYWRIGHT_DOWNLOAD_HOST || DEFAULT_BROWSER_HOST);
+  const targets = [{ url: registryUrl(), kind: 'registry' }];
+  if (process.argv.includes('--browsers')) targets.push({ url: process.env.PLAYWRIGHT_DOWNLOAD_HOST || DEFAULT_BROWSER_HOST, kind: 'browsers' });
 
-  const results = await Promise.all(targets.map(probe));
+  const results = await Promise.all(targets.map((t) => probe(t.url, t.kind)));
   for (const r of results) {
     if (!r.code) process.stdout.write(`TLS check: ${r.host} - certificate trusted\n`);
     else if (isCertificateCode(r.code)) process.stdout.write(`TLS check: ${r.host} - certificate NOT trusted (${r.code})\n`);
