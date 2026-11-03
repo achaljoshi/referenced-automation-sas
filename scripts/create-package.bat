@@ -33,7 +33,7 @@ if not exist "%OUT_DIR%" mkdir "%OUT_DIR%"
 if "%LOCAL%"=="1" (
   REM The packages this one depends on come from ..\shared-packages instead of the registry (see scripts\setup.bat).
   set "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1"
-  call scripts\setup.bat --local
+  call scripts\setup.bat --local --no-extensions
   if errorlevel 1 exit /b 1
 ) else (
   call npm ci

@@ -521,6 +521,8 @@ To see the whole chain work from the registry (no `--local`): set `NPM_REGISTRY_
 
 Use this when the packages are not in a registry yet, or you want to try a change before publishing it. Nothing in `package.json` or the lockfile changes.
 
+**For a machine that reaches neither GitHub nor your registry yet** (an AWS WorkSpace, for example): build an offline bundle once on a machine that can - every package as a `.tgz` and every repo as a `.tar.gz`, with checksums - copy it over, and run the repos from it. When the registry is ready, upload the same package files to it. Steps for both, in PowerShell, are in the [offline bundle guide](https://github.com/achaljoshi/referenced-automation-utils/blob/master/docs/OFFLINE_BUNDLE.md) in `referenced-automation-utils`.
+
 **Automatic - when the repos are checked out next to each other:** `./scripts/setup.sh --local` (Windows: `.\scripts\setup.bat --local`). It builds the sibling repos this one depends on with their own `scripts/create-package.sh --local`, keeps the `.tgz` files in `../shared-packages` and installs them.
 
 **Manual:** generate a tarball of each package in that package's own repo (`(cd ../referenced-automation-utils && ./scripts/create-package.sh --local)`, likewise `api` and `ui`; each lands in `../shared-packages`), then install them all in one command with `npm install --no-save ../shared-packages/automation-referenced-automation-utils-<version>.tgz ...`. `--no-save` keeps `package.json` and the lockfile unchanged; run it again after every `npm ci`. Run `npm ci` to go back to what the registry provides.

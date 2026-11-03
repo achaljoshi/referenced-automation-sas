@@ -12,13 +12,17 @@ REM It builds the sibling repos this one depends on (referenced-automation-utils
 REM files in ..\shared-packages and installs those instead. Nothing in package.json or package-lock.json changes. The
 REM sibling repos must be checked out next to this one. (USE_LOCAL_PACKAGES=1 does the same.)
 REM
-REM Usage: scripts\setup.bat [--local]
+REM Usage: scripts\setup.bat [--local] [--no-extensions]
 REM ============================================================================
 setlocal enabledelayedexpansion
 cd /d "%~dp0\.."
 
 set "LOCAL=0"
-if "%~1"=="--local" set "LOCAL=1"
+set "EXTENSIONS=1"
+for %%A in (%*) do (
+  if "%%~A"=="--local" set "LOCAL=1"
+  if "%%~A"=="--no-extensions" set "EXTENSIONS=0"
+)
 if "%USE_LOCAL_PACKAGES%"=="1" set "LOCAL=1"
 set "SHARED_PACKAGES_DIR=..\shared-packages"
 
@@ -76,9 +80,11 @@ if "%PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD%"=="1" (
   if errorlevel 1 exit /b 1
 )
 
-echo.
-echo == VS Code extensions ^(optional: a failure here never stops setup^) ==
-call node scripts\install-vscode-extensions.js
+if "%EXTENSIONS%"=="1" (
+  echo.
+  echo == VS Code extensions ^(optional: a failure here never stops setup^) ==
+  call node scripts\install-vscode-extensions.js
+)
 
 echo.
 echo Setup complete. Try: npm test

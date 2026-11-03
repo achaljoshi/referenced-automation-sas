@@ -12,14 +12,17 @@
 # ../shared-packages and installs those instead. Nothing in package.json or package-lock.json changes. The sibling
 # repos must be checked out next to this one. (USE_LOCAL_PACKAGES=1 does the same.)
 #
-# Usage: ./scripts/setup.sh [--local]
+# Usage: ./scripts/setup.sh [--local] [--no-extensions]
+#   --no-extensions  do not install the recommended VS Code extensions (create-package uses it: building a package must not touch your editor)
 # ============================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 LOCAL=0
+EXTENSIONS=1
 for arg in "$@"; do
   if [ "$arg" = "--local" ]; then LOCAL=1; fi
+  if [ "$arg" = "--no-extensions" ]; then EXTENSIONS=0; fi
 done
 if [ "${USE_LOCAL_PACKAGES:-}" = "1" ]; then LOCAL=1; fi
 
@@ -102,9 +105,11 @@ else
   npx playwright install --with-deps chromium
 fi
 
-echo ""
-echo "== VS Code extensions (optional: a failure here never stops setup) =="
-node scripts/install-vscode-extensions.js || true
+if [ "$EXTENSIONS" = "1" ]; then
+  echo ""
+  echo "== VS Code extensions (optional: a failure here never stops setup) =="
+  node scripts/install-vscode-extensions.js || true
+fi
 
 echo ""
 echo "Setup complete. Try: npm test"
