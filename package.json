@@ -24,6 +24,7 @@
     "clean": "rimraf --glob dist \"*.tgz\"",
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "install:extensions": "node scripts/install-vscode-extensions.js",
     "test": "bddgen && playwright test",
     "test:ci": "bddgen && playwright test && node scripts/min-executed.js --min 600",
     "test:bdd": "bddgen && playwright test --project=bdd --project=bdd-production --project=bdd-real --workers=50% && node scripts/min-executed.js --min 23",

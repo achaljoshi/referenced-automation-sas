@@ -77,6 +77,10 @@ if "%PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD%"=="1" (
 )
 
 echo.
+echo == VS Code extensions ^(optional: a failure here never stops setup^) ==
+call node scripts\install-vscode-extensions.js
+
+echo.
 echo Setup complete. Try: npm test
 endlocal
 exit /b 0
@@ -84,8 +88,8 @@ exit /b 0
 :ensure_package
 set "REPO_NAME=%~1"
 set "FOUND="
-for %%F in ("%SHARED_PACKAGES_DIR%\automation-%REPO_NAME%-*.tgz") do set "FOUND=%%F"
-if defined FOUND (
+call :latest_tarball %REPO_NAME% FOUND
+if defined FOUND if exist "!FOUND!" (
   echo == %REPO_NAME%: already packaged ==
   exit /b 0
 )
@@ -105,9 +109,15 @@ set "BUILD_RESULT=%ERRORLEVEL%"
 popd
 exit /b %BUILD_RESULT%
 
-REM The newest tarball (last in name order) of a package in %SHARED_PACKAGES_DIR%.
+REM The tarball setup installs for a package: the one of the version its sibling checkout has NOW. An older tarball left in
+REM %SHARED_PACKAGES_DIR% is ignored - it could carry a bug that a newer version fixed. Without the sibling checkout, the
+REM newest tarball there is (last in name order).
 :latest_tarball
 set "LATEST="
-for /f "delims=" %%F in ('dir /b /o:n "%SHARED_PACKAGES_DIR%\automation-%~1-*.tgz"') do set "LATEST=%SHARED_PACKAGES_DIR%\%%F"
+if exist "..\%~1\package.json" (
+  for /f "delims=" %%V in ('node scripts\package-version.js "..\%~1"') do set "LATEST=%SHARED_PACKAGES_DIR%\automation-%~1-%%V.tgz"
+) else (
+  for /f "delims=" %%F in ('dir /b /o:n "%SHARED_PACKAGES_DIR%\automation-%~1-*.tgz" 2^>nul') do set "LATEST=%SHARED_PACKAGES_DIR%\%%F"
+)
 set "%~2=%LATEST%"
 exit /b 0

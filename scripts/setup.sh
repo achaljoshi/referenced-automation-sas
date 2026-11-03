@@ -38,12 +38,14 @@ node scripts/check-tls.js $TLS_ARGS || exit 1
 
 SHARED_PACKAGES_DIR="../shared-packages"
 
-# Builds <repo_name> into $SHARED_PACKAGES_DIR if no tarball of it is there yet. Needs <repo_name> checked out as a
+# Builds <repo_name> into $SHARED_PACKAGES_DIR if no tarball of its current version is there yet. Needs <repo_name> checked out as a
 # sibling of this repo; its own create-package.sh --local builds the packages IT depends on first.
 ensure_package() {
   local repo_name="$1"
-  if compgen -G "$SHARED_PACKAGES_DIR/automation-${repo_name}-*.tgz" > /dev/null 2>&1; then
-    echo "== ${repo_name}: already packaged =="
+  local wanted
+  wanted="$(latest_tarball "$repo_name")"
+  if [ -n "$wanted" ] && [ -f "$wanted" ]; then
+    echo "== ${repo_name}: already packaged ($(basename "$wanted")) =="
     return
   fi
   local repo_dir="../${repo_name}"
@@ -57,9 +59,16 @@ ensure_package() {
   ( cd "$repo_dir" && ./scripts/create-package.sh --local "$SHARED_PACKAGES_DIR" )
 }
 
-# The newest tarball of a package in $SHARED_PACKAGES_DIR (by version).
+# The tarball setup installs for a package: the one of the version its sibling checkout has NOW. An older tarball left in
+# $SHARED_PACKAGES_DIR is ignored - it could carry a bug that a newer version fixed. Without the sibling checkout, the
+# newest tarball there is.
 latest_tarball() {
-  ls "$SHARED_PACKAGES_DIR"/automation-"$1"-*.tgz | sort -V | tail -1
+  local repo_name="$1"
+  if [ -f "../${repo_name}/package.json" ]; then
+    echo "$SHARED_PACKAGES_DIR/automation-${repo_name}-$(node scripts/package-version.js "../${repo_name}").tgz"
+  else
+    ls "$SHARED_PACKAGES_DIR"/automation-"$repo_name"-*.tgz 2>/dev/null | sort -V | tail -1 || true
+  fi
 }
 
 if [ "$LOCAL" = "1" ]; then
@@ -92,6 +101,10 @@ else
   echo "== Installing Playwright browsers ====================================="
   npx playwright install --with-deps chromium
 fi
+
+echo ""
+echo "== VS Code extensions (optional: a failure here never stops setup) =="
+node scripts/install-vscode-extensions.js || true
 
 echo ""
 echo "Setup complete. Try: npm test"
